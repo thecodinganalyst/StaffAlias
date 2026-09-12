@@ -1,6 +1,10 @@
-const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const apiUrl = import.meta.env.VITE_API_URL?.trim();
+
+if (!apiUrl) {
+  throw new Error("VITE_API_URL must be configured for the frontend environment");
+}
 
 export const env = {
-  apiUrl: configuredApiUrl || "http://localhost:8080",
+  apiUrl,
   appName: import.meta.env.VITE_APP_NAME?.trim() || "StaffAlias",
 } as const;
