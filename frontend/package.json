@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "@refinedev/core": "^5.0.12",
     "antd": "^6.6.3",
     "react": "^19.3.0",
