@@ -1,4 +1,24 @@
 name: staffalias
 
-# Local infrastructure services will be added in issue #3.
-services: {}
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${STAFFALIAS_DB_NAME:-staffalias}
+      POSTGRES_USER: ${STAFFALIAS_DB_USER:-staffalias}
+      POSTGRES_PASSWORD: ${STAFFALIAS_DB_PASSWORD:-staffalias}
+    ports:
+      - "${STAFFALIAS_DB_PORT:-5432}:5432"
+    volumes:
+      - staffalias-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${STAFFALIAS_DB_USER:-staffalias} -d ${STAFFALIAS_DB_NAME:-staffalias}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  staffalias-postgres-data:
