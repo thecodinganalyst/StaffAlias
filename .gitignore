@@ -1,0 +1,38 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Java / Spring
+backend/target/
+backend/build/
+*.class
+*.jar
+*.war
+.gradle/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/coverage/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.swp
+.DS_Store
+
+# Logs and temp files
+*.log
+.tmp/
+tmp/
+
+# Local database / container artifacts
+postgres-data/
+.pgdata/
+
+# Test artifacts
+backend/target/surefire-reports/
+backend/target/failsafe-reports/
