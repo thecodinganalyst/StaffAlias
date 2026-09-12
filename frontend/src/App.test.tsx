@@ -8,6 +8,6 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "StaffAlias" })).toBeInTheDocument();
-    expect(screen.getByText(/staff lifecycle/i)).toBeInTheDocument();
+    expect(screen.getByText(/track the staff lifecycle/i)).toBeInTheDocument();
   });
 });
