@@ -15,6 +15,7 @@ This directory is the source of truth for StaffAlias architecture, development p
 - [Getting started](development/getting-started.md)
 - [Database, Flyway, Docker Compose, and Testcontainers](development/database.md)
 - [Testing strategy](development/testing.md)
+- [Continuous integration](development/ci.md)
 
 ## Architecture decisions
 
