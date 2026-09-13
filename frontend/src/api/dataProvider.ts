@@ -24,7 +24,7 @@ const getOne = async <TData extends BaseRecord = BaseRecord>({
   data: await apiFetch<TData>(`/api/${resource}/${id}`),
 });
 
-const create = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
+const create = async <TData extends BaseRecord = BaseRecord, TVariables = unknown>({
   resource,
   variables,
 }: CreateParams<TVariables>) => ({
@@ -34,7 +34,7 @@ const create = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
   }),
 });
 
-const update = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
+const update = async <TData extends BaseRecord = BaseRecord, TVariables = unknown>({
   resource,
   id,
   variables,
@@ -45,7 +45,7 @@ const update = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
   }),
 });
 
-const deleteOne = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
+const deleteOne = async <TData extends BaseRecord = BaseRecord, TVariables = unknown>({
   resource,
   id,
 }: DeleteOneParams<TVariables>) => ({
