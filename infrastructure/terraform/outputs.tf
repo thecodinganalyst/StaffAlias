@@ -34,8 +34,18 @@ output "runtime_service_account_email" {
 }
 
 output "deployment_service_account_email" {
-  description = "Service account intended for GitHub Actions deployment via Workload Identity Federation."
+  description = "Service account used by GitHub Actions deployment via Workload Identity Federation."
   value       = google_service_account.deployment.email
+}
+
+output "github_workload_identity_provider" {
+  description = "Fully-qualified Workload Identity Provider resource name for google-github-actions/auth."
+  value       = google_iam_workload_identity_pool_provider.github.name
+}
+
+output "github_environment" {
+  description = "GitHub Environment name required by the production deployment workflow."
+  value       = var.github_environment
 }
 
 output "runtime_secret_ids" {
