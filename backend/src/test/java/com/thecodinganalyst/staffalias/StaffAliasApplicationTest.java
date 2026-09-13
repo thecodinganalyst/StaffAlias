@@ -8,6 +8,7 @@ import com.thecodinganalyst.staffalias.employment.EmploymentIdentifierRepository
 import com.thecodinganalyst.staffalias.employment.EmploymentRepository;
 import com.thecodinganalyst.staffalias.people.PersonRepository;
 import com.thecodinganalyst.staffalias.tenant.TenantRepository;
+import com.thecodinganalyst.staffalias.tenant.TenantSettingRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -28,6 +29,9 @@ class StaffAliasApplicationTest {
 
     @MockitoBean
     private TenantRepository tenantRepository;
+
+    @MockitoBean
+    private TenantSettingRepository tenantSettingRepository;
 
     @MockitoBean
     private PersonRepository personRepository;
