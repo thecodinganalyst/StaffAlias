@@ -63,6 +63,42 @@ variable "allow_unauthenticated" {
   default     = true
 }
 
+variable "github_repository_id" {
+  description = "Immutable GitHub repository ID allowed to federate to GCP."
+  type        = string
+  default     = "1366973047"
+}
+
+variable "github_repository_owner_id" {
+  description = "Immutable GitHub repository owner ID allowed to federate to GCP."
+  type        = string
+  default     = "60729103"
+}
+
+variable "github_deploy_branch" {
+  description = "Only this GitHub branch may authenticate for production deployment."
+  type        = string
+  default     = "main"
+}
+
+variable "github_environment" {
+  description = "GitHub Environment required for production deployment jobs."
+  type        = string
+  default     = "production"
+}
+
+variable "github_workload_identity_pool_id" {
+  description = "GCP Workload Identity Pool ID used by GitHub Actions."
+  type        = string
+  default     = "github-actions"
+}
+
+variable "github_workload_identity_provider_id" {
+  description = "OIDC provider ID inside the GitHub Actions Workload Identity Pool."
+  type        = string
+  default     = "staffalias"
+}
+
 variable "labels" {
   description = "Labels applied to supported resources."
   type        = map(string)
