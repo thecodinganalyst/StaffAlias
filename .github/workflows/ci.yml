@@ -55,7 +55,7 @@ jobs:
           node-version: '22'
 
       - name: Restore npm download cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node22-npm-${{ hashFiles('frontend/package.json') }}
