@@ -31,7 +31,7 @@ jobs:
 
       - name: Run backend tests
         working-directory: backend
-        run: ./mvnw -B verify
+        run: mvn -B verify
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -74,6 +74,12 @@ jobs:
             --image "${IMAGE_URI}" \
             --platform managed \
             --port 8080 \
+            --cpu 1 \
+            --memory 512Mi \
+            --min 0 \
+            --max 3 \
+            --concurrency 80 \
+            --timeout 300 \
             --set-env-vars SPRING_PROFILES_ACTIVE=prod \
             --update-secrets DB_URL=staffalias-db-url:latest,DB_USERNAME=staffalias-db-username:latest,DB_PASSWORD=staffalias-db-password:latest \
             --quiet
