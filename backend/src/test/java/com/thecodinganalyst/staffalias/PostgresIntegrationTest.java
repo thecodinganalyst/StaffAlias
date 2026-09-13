@@ -2,6 +2,8 @@ package com.thecodinganalyst.staffalias;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,15 +25,32 @@ class PostgresIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void applicationUsesPostgresAndRunsFlywayMigrations() {
+    void applicationUsesPostgresAndRunsAllFlywayMigrationsFromCleanDatabase() {
         String databaseProduct = jdbcTemplate.queryForObject(
                 "select version()",
                 String.class);
-        Integer migrationCount = jdbcTemplate.queryForObject(
-                "select count(*) from flyway_schema_history where version = '1' and success = true",
+        List<String> successfulVersions = jdbcTemplate.queryForList(
+                "select version from flyway_schema_history where success = true and version is not null order by installed_rank",
+                String.class);
+        Integer failedMigrationCount = jdbcTemplate.queryForObject(
+                "select count(*) from flyway_schema_history where success = false",
                 Integer.class);
 
         assertThat(databaseProduct).containsIgnoringCase("PostgreSQL");
-        assertThat(migrationCount).isEqualTo(1);
+        assertThat(successfulVersions).containsExactly("1", "2", "3");
+        assertThat(failedMigrationCount).isZero();
+
+        assertThat(tableExists("tenant")).isTrue();
+        assertThat(tableExists("person")).isTrue();
+        assertThat(tableExists("employment")).isTrue();
+        assertThat(tableExists("employment_identifier")).isTrue();
+    }
+
+    private boolean tableExists(String tableName) {
+        Boolean exists = jdbcTemplate.queryForObject(
+                "select exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = ?)",
+                Boolean.class,
+                tableName);
+        return Boolean.TRUE.equals(exists);
     }
 }
