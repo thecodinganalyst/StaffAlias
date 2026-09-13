@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Generated Google GitHub Actions credentials
+gha-creds-*.json
+
 # Java / Spring
 backend/target/
 backend/build/
