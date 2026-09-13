@@ -1,29 +1,62 @@
-import type { BaseRecord, DataProvider } from "@refinedev/core";
+import type {
+  BaseRecord,
+  CreateParams,
+  DataProvider,
+  DeleteOneParams,
+  GetListParams,
+  GetOneParams,
+  UpdateParams,
+} from "@refinedev/core";
 import { apiFetch } from "./client";
 import { env } from "../config/env";
 
+const getList = async <TData extends BaseRecord = BaseRecord>({
+  resource,
+}: GetListParams) => {
+  const data = await apiFetch<TData[]>(`/api/${resource}`);
+  return { data, total: data.length };
+};
+
+const getOne = async <TData extends BaseRecord = BaseRecord>({
+  resource,
+  id,
+}: GetOneParams) => ({
+  data: await apiFetch<TData>(`/api/${resource}/${id}`),
+});
+
+const create = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
+  resource,
+  variables,
+}: CreateParams<TVariables>) => ({
+  data: await apiFetch<TData>(`/api/${resource}`, {
+    method: "POST",
+    body: JSON.stringify(variables),
+  }),
+});
+
+const update = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
+  resource,
+  id,
+  variables,
+}: UpdateParams<TVariables>) => ({
+  data: await apiFetch<TData>(`/api/${resource}/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(variables),
+  }),
+});
+
+const deleteOne = async <TData extends BaseRecord = BaseRecord, TVariables = {}>({
+  resource,
+  id,
+}: DeleteOneParams<TVariables>) => ({
+  data: await apiFetch<TData>(`/api/${resource}/${id}`, { method: "DELETE" }),
+});
+
 export const dataProvider: DataProvider = {
   getApiUrl: () => env.apiUrl,
-  getList: async ({ resource }) => {
-    const data = await apiFetch<BaseRecord[]>(`/api/${resource}`);
-    return { data, total: data.length };
-  },
-  getOne: async ({ resource, id }) => ({
-    data: await apiFetch<BaseRecord>(`/api/${resource}/${id}`),
-  }),
-  create: async ({ resource, variables }) => ({
-    data: await apiFetch<BaseRecord>(`/api/${resource}`, {
-      method: "POST",
-      body: JSON.stringify(variables),
-    }),
-  }),
-  update: async ({ resource, id, variables }) => ({
-    data: await apiFetch<BaseRecord>(`/api/${resource}/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(variables),
-    }),
-  }),
-  deleteOne: async ({ resource, id }) => ({
-    data: await apiFetch<BaseRecord>(`/api/${resource}/${id}`, { method: "DELETE" }),
-  }),
+  getList,
+  getOne,
+  create,
+  update,
+  deleteOne,
 };
