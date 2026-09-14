@@ -22,7 +22,7 @@ variable "cloud_run_service_name" {
 }
 
 variable "cloud_run_image" {
-  description = "Initial container image for the Cloud Run service. Issue #31 will replace this with the StaffAlias backend image."
+  description = "Bootstrap image used only when Terraform first creates the Cloud Run service. After the first GitHub deployment, image changes are deployment-workflow managed and ignored by Terraform."
   type        = string
   default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }

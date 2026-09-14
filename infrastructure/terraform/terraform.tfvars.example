@@ -4,9 +4,10 @@ region     = "asia-southeast1"
 artifact_registry_repository = "staffalias"
 cloud_run_service_name       = "staffalias-api"
 
-# The default public Cloud Run hello image is only a bootstrap placeholder.
-# Issue #31 will deploy the real StaffAlias backend image from Artifact Registry.
-# cloud_run_image = "asia-southeast1-docker.pkg.dev/staffalias-prod/staffalias/backend:<commit-sha>"
+# Optional bootstrap image used only when Terraform first creates the Cloud Run service.
+# After the first GitHub backend deployment, Terraform intentionally ignores changes to
+# the deployed image and application env/secret bindings so it will not roll releases back.
+# cloud_run_image = "us-docker.pkg.dev/cloudrun/container/hello"
 
 cloud_run_min_instances = 0
 cloud_run_max_instances = 3
