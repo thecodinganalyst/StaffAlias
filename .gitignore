@@ -6,6 +6,10 @@
 # Generated Google GitHub Actions credentials
 gha-creds-*.json
 
+# Firebase CLI
+.firebase/
+firebase-debug.log*
+
 # Java / Spring
 backend/target/
 backend/build/
