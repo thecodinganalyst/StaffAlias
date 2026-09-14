@@ -20,6 +20,18 @@ resource "google_project_iam_member" "deployment_cloud_run_admin" {
   member  = "serviceAccount:${google_service_account.deployment.email}"
 }
 
+resource "google_project_iam_member" "deployment_firebase_hosting_admin" {
+  project = var.project_id
+  role    = "roles/firebasehosting.admin"
+  member  = "serviceAccount:${google_service_account.deployment.email}"
+}
+
+resource "google_project_iam_member" "deployment_firebase_api_keys_viewer" {
+  project = var.project_id
+  role    = "roles/serviceusage.apiKeysViewer"
+  member  = "serviceAccount:${google_service_account.deployment.email}"
+}
+
 resource "google_artifact_registry_repository_iam_member" "deployment_writer" {
   project    = var.project_id
   location   = google_artifact_registry_repository.backend.location
