@@ -13,6 +13,10 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
+      # Bootstrap-only value. After the first application deployment, the GitHub
+      # deployment workflow owns the release image and application env/secret
+      # bindings. lifecycle.ignore_changes below prevents Terraform from
+      # reverting those deployment-managed fields on later infrastructure applies.
       image = var.cloud_run_image
 
       ports {
@@ -34,6 +38,16 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 
   labels = var.labels
+
+  lifecycle {
+    ignore_changes = [
+      client,
+      client_version,
+      template[0].scaling[0].manual_instance_count,
+      template[0].containers[0].image,
+      template[0].containers[0].env,
+    ]
+  }
 
   depends_on = [
     google_project_service.required,
