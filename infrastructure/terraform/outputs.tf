@@ -38,6 +38,11 @@ output "deployment_service_account_email" {
   value       = google_service_account.deployment.email
 }
 
+output "terraform_service_account_email" {
+  description = "Service account used by protected GitHub Actions Terraform runs."
+  value       = google_service_account.terraform.email
+}
+
 output "github_workload_identity_provider" {
   description = "Fully-qualified Workload Identity Provider resource name for google-github-actions/auth."
   value       = google_iam_workload_identity_pool_provider.github.name
