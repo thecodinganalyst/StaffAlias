@@ -14,6 +14,35 @@ resource "google_service_account" "deployment" {
   depends_on = [google_project_service.required]
 }
 
+resource "google_service_account" "terraform" {
+  project      = var.project_id
+  account_id   = "staffalias-terraform"
+  display_name = "StaffAlias Terraform automation"
+
+  depends_on = [google_project_service.required]
+}
+
+locals {
+  terraform_project_roles = toset([
+    "roles/artifactregistry.admin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountUser",
+    "roles/iam.workloadIdentityPoolAdmin",
+    "roles/resourcemanager.projectIamAdmin",
+    "roles/run.admin",
+    "roles/secretmanager.admin",
+    "roles/serviceusage.serviceUsageAdmin",
+  ])
+}
+
+resource "google_project_iam_member" "terraform" {
+  for_each = local.terraform_project_roles
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.terraform.email}"
+}
+
 resource "google_project_iam_member" "deployment_cloud_run_admin" {
   project = var.project_id
   role    = "roles/run.admin"
