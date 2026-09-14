@@ -53,6 +53,9 @@ Configure these Environment variables:
 | `GCP_CLOUD_RUN_SERVICE` | Terraform `cloud_run_service_name` output |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | Terraform `github_workload_identity_provider` output |
 | `GCP_SERVICE_ACCOUNT` | Terraform `deployment_service_account_email` output |
+| `FIREBASE_HOSTING_SITE` | Production Firebase Hosting site ID |
+
+The first six values configure GCP deployment. `FIREBASE_HOSTING_SITE` is added when Firebase Hosting is set up for the frontend.
 
 These values are identifiers, not passwords, so they should be GitHub Environment variables rather than secrets.
 
@@ -64,7 +67,7 @@ Configure the `production` Environment so deployments require the controls you w
 
 ## Validate OIDC
 
-After Terraform has been applied and the six environment variables above are configured, run the `GCP OIDC Smoke Test` workflow manually from the Actions tab on `main`.
+After Terraform has been applied and the required GCP environment variables are configured, run the `GCP OIDC Smoke Test` workflow manually from the Actions tab on `main`.
 
 The workflow:
 

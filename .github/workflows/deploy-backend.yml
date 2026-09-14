@@ -67,7 +67,10 @@ jobs:
           REGION: ${{ vars.GCP_REGION }}
           SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
           IMAGE_URI: ${{ steps.image.outputs.uri }}
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
         run: |
+          test -n "${FIREBASE_HOSTING_SITE}"
+          FRONTEND_ORIGINS="https://${FIREBASE_HOSTING_SITE}.web.app;https://${FIREBASE_HOSTING_SITE}.firebaseapp.com"
           gcloud run deploy "${SERVICE}" \
             --project "${PROJECT_ID}" \
             --region "${REGION}" \
@@ -80,7 +83,7 @@ jobs:
             --max 3 \
             --concurrency 80 \
             --timeout 300 \
-            --set-env-vars SPRING_PROFILES_ACTIVE=prod \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,CORS_ALLOWED_ORIGINS=${FRONTEND_ORIGINS}" \
             --update-secrets DB_URL=staffalias-db-url:latest,DB_USERNAME=staffalias-db-username:latest,DB_PASSWORD=staffalias-db-password:latest \
             --quiet
 
