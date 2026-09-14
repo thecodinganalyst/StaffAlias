@@ -34,8 +34,18 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 }
 
+locals {
+  github_repository_principal = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository_id/${var.github_repository_id}"
+}
+
 resource "google_service_account_iam_member" "github_deployment_workload_identity_user" {
   service_account_id = google_service_account.deployment.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository_id/${var.github_repository_id}"
+  member             = local.github_repository_principal
+}
+
+resource "google_service_account_iam_member" "github_terraform_workload_identity_user" {
+  service_account_id = google_service_account.terraform.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = local.github_repository_principal
 }
