@@ -1,0 +1,167 @@
+name: Deploy Frontend to Firebase Hosting
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-frontend
+  cancel-in-progress: false
+
+jobs:
+  test-build-deploy:
+    name: Test, build and deploy frontend
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Resolve production backend URL
+        id: backend
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+          SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
+        run: |
+          API_URL="$(gcloud run services describe "${SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          test -n "${API_URL}"
+          echo "url=${API_URL}" >> "$GITHUB_OUTPUT"
+          echo "Production API: ${API_URL}"
+
+      - name: Restore npm download cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node22-npm-
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Lint frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_APP_NAME: StaffAlias
+        run: npm run lint
+
+      - name: Type check frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_APP_NAME: StaffAlias
+        run: npm run typecheck
+
+      - name: Test frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_APP_NAME: StaffAlias
+        run: npm run test
+
+      - name: Build production frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_APP_NAME: StaffAlias
+        run: npm run build
+
+      - name: Validate Firebase Hosting site
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+        run: |
+          test -n "${FIREBASE_HOSTING_SITE}"
+          npx --yes firebase-tools@15.30.0 hosting:sites:get "${FIREBASE_HOSTING_SITE}" \
+            --project "${PROJECT_ID}" \
+            --non-interactive
+
+      - name: Select production Hosting site
+        env:
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const path = 'firebase.json';
+          const config = JSON.parse(fs.readFileSync(path, 'utf8'));
+          config.hosting.site = process.env.FIREBASE_HOSTING_SITE;
+          fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`);
+          NODE
+
+      - name: Deploy to Firebase Hosting
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          npx --yes firebase-tools@15.30.0 deploy \
+            --only hosting \
+            --project "${PROJECT_ID}" \
+            --non-interactive \
+            --message "GitHub ${GITHUB_SHA}"
+
+      - name: Verify deployed frontend
+        env:
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+        run: |
+          FRONTEND_URL="https://${FIREBASE_HOSTING_SITE}.web.app"
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --max-time 15 "${FRONTEND_URL}" > /dev/null; then
+              echo "Frontend available at ${FRONTEND_URL}"
+              exit 0
+            fi
+            echo "Frontend check attempt ${attempt}/12 failed; retrying..."
+            sleep 10
+          done
+          echo "Firebase Hosting did not become reachable."
+          exit 1
+
+      - name: Verify backend CORS for Firebase origin
+        env:
+          API_URL: ${{ steps.backend.outputs.url }}
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+        run: |
+          ORIGIN="https://${FIREBASE_HOSTING_SITE}.web.app"
+          HEADERS="$(mktemp)"
+          curl --fail --silent --show-error --max-time 15 \
+            -X OPTIONS "${API_URL}/actuator/health" \
+            -H "Origin: ${ORIGIN}" \
+            -H "Access-Control-Request-Method: GET" \
+            -D "${HEADERS}" \
+            -o /dev/null
+          grep -qi "^access-control-allow-origin: ${ORIGIN}" "${HEADERS}"
+
+      - name: Deployment summary
+        env:
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+        run: |
+          {
+            echo "### StaffAlias frontend deployment"
+            echo "- Hosting URL: https://${FIREBASE_HOSTING_SITE}.web.app"
+            echo "- Backend API: ${{ steps.backend.outputs.url }}"
+            echo "- Source commit: \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
