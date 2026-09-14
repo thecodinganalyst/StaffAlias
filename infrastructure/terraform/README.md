@@ -8,10 +8,36 @@ This directory contains Terraform for the existing StaffAlias production GCP pro
 - Docker Artifact Registry repository
 - Cloud Run v2 backend service skeleton
 - Dedicated runtime and deployment service accounts
-- Least-privilege deployment IAM needed for later GitHub Actions deployment
+- Least-privilege deployment IAM needed for GitHub Actions deployment
 - Secret Manager containers for `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`
 
-Terraform creates only the secret containers. **Do not put real secret values in `terraform.tfvars`, Terraform resources, or source control.** Secret values are added separately and consumed by the production deployment in later issues.
+Terraform creates only the secret containers. **Do not put real secret values in `terraform.tfvars`, Terraform resources, or source control.** Secret values are added separately and consumed by the production deployment workflow.
+
+## Cloud Run ownership boundary
+
+Terraform and the production deployment workflow deliberately own different parts of the Cloud Run service.
+
+Terraform owns stable infrastructure such as:
+
+- service name, project, and region
+- runtime service account
+- ingress
+- CPU and memory defaults
+- min/max scaling defaults
+- container port
+- service labels
+- invoker IAM
+
+The `Deploy Backend to Cloud Run` GitHub Actions workflow owns release-specific application state such as:
+
+- immutable StaffAlias container image
+- `SPRING_PROFILES_ACTIVE`
+- `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` Secret Manager bindings
+- other application runtime environment values applied with `gcloud run deploy`
+
+The Cloud Run Terraform resource therefore ignores changes to the deployed image and container environment after creation. This prevents a later `terraform apply` from rolling a production deployment back to the bootstrap image or deleting Secret Manager bindings. The bootstrap `cloud_run_image` value is still used when Terraform creates a new Cloud Run service from scratch.
+
+Always review a production `terraform plan`. A normal post-deployment plan must **not** propose replacing the StaffAlias image with the Google hello image or removing the three database secret bindings.
 
 ## Prerequisites
 
@@ -59,7 +85,7 @@ terraform validate
 terraform plan
 ```
 
-Review the plan before applying it. In particular, verify the GCP project ID and region.
+Review the plan before applying it. In particular, verify the GCP project ID and region, and confirm Terraform is not reverting deployment-managed Cloud Run image or secret settings.
 
 ## Apply
 
@@ -87,15 +113,15 @@ Do not paste production credentials into shell history if your environment recor
 
 ## Cloud Run bootstrap image
 
-The Cloud Run service initially uses Google's public Cloud Run hello container. This allows infrastructure provisioning to complete before the StaffAlias production backend image exists. Issue #31 replaces this placeholder with an immutable StaffAlias image from the provisioned Artifact Registry repository.
+The Cloud Run service initially uses Google's public Cloud Run hello container. This allows infrastructure provisioning to complete before the StaffAlias production backend image exists. The production backend deployment then replaces the placeholder with an immutable StaffAlias image from Artifact Registry. Subsequent Terraform plans intentionally ignore that release image and application environment so infrastructure changes cannot roll the deployed application backwards.
 
 The service is publicly invokable by default because the browser frontend must reach the API; authentication/authorization remains an application responsibility. Set `allow_unauthenticated = false` if the intended architecture changes.
 
 ## IAM design
 
 - `staffalias-runtime`: identity used by the running backend. It can access only the Secret Manager secrets created by this module.
-- `staffalias-deploy`: identity reserved for GitHub Actions. It can push Artifact Registry images, administer Cloud Run deployment, and act as the runtime service account when deploying revisions.
-- Issue #30 will add Workload Identity Federation so GitHub Actions can impersonate the deployment account without a long-lived JSON service-account key.
+- `staffalias-deploy`: identity used by GitHub Actions. It can push Artifact Registry images, administer Cloud Run deployment, and act as the runtime service account when deploying revisions.
+- Workload Identity Federation lets GitHub Actions impersonate the deployment account without a long-lived JSON service-account key.
 
 ## State
 
