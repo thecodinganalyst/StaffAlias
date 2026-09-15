@@ -124,11 +124,11 @@ jobs:
       TERRAFORM_SERVICE_ACCOUNT: staffalias-terraform@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
 
     steps:
-      - name: Require remote state bucket
-        run: test -n "${TF_STATE_BUCKET}"
-
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Require remote state bucket
+        run: test -n "${TF_STATE_BUCKET}"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
