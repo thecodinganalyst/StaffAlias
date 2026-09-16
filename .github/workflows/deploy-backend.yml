@@ -1,6 +1,7 @@
 name: Deploy Backend to Cloud Run
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -125,4 +126,5 @@ jobs:
             echo "- Image: \`${{ steps.image.outputs.uri }}\`"
             echo "- Revision: \`${{ steps.service.outputs.revision }}\`"
             echo "- URL: ${{ steps.service.outputs.url }}"
+            echo "- Source commit: \`${{ github.sha }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
