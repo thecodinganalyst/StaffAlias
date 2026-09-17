@@ -30,8 +30,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, [refresh]);
+    let active = true;
+
+    async function initializeAuth() {
+      try {
+        const current = await apiFetch<AuthenticatedUser>("/api/auth/me");
+        if (active) setUser(current);
+      } catch (error) {
+        if (active && error instanceof ApiError && error.status === 401) {
+          setUser(null);
+        } else if (!(error instanceof ApiError && error.status === 401)) {
+          throw error;
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void initializeAuth();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const login = useCallback(async (username: string, password: string) => {
     const current = await apiFetch<AuthenticatedUser>("/api/auth/login", {
