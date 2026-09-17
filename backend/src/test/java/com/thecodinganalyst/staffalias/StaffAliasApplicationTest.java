@@ -7,20 +7,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.thecodinganalyst.staffalias.employment.EmploymentIdentifierRepository;
 import com.thecodinganalyst.staffalias.employment.EmploymentRepository;
 import com.thecodinganalyst.staffalias.people.PersonRepository;
-import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;
 import com.thecodinganalyst.staffalias.tenant.TenantRepository;
 import com.thecodinganalyst.staffalias.tenant.TenantSettingRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-                + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-                + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+        "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
+                + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
+                + "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration"
 })
 @AutoConfigureMockMvc
 class StaffAliasApplicationTest {
@@ -42,9 +41,6 @@ class StaffAliasApplicationTest {
 
     @MockitoBean
     private EmploymentIdentifierRepository employmentIdentifierRepository;
-
-    @MockitoBean
-    private ApplicationUserRepository applicationUserRepository;
 
     @Test
     void contextLoads() {
