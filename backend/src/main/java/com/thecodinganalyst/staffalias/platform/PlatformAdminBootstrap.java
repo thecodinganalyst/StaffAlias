@@ -41,7 +41,12 @@ public class PlatformAdminBootstrap implements ApplicationRunner {
         if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
             throw new IllegalStateException("Both platform admin username and password must be configured together");
         }
-        if (userRepository.findByUsernameIgnoreCase(username).isPresent()) {
+
+        var existing = userRepository.findByUsernameIgnoreCase(username);
+        if (existing.isPresent()) {
+            if (existing.get().getRole() != ApplicationRole.PLATFORM_ADMIN) {
+                throw new IllegalStateException("Configured platform admin username belongs to a non-platform account");
+            }
             log.info("Platform admin bootstrap skipped because account already exists");
             return;
         }
