@@ -31,7 +31,21 @@ export function PlatformTenantsPage() {
   }
 
   useEffect(() => {
-    void load();
+    let active = true;
+
+    async function loadInitialTenants() {
+      try {
+        const currentTenants = await apiFetch<Tenant[]>("/api/platform/tenants");
+        if (active) setTenants(currentTenants);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadInitialTenants();
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function createTenant(values: { code: string; name: string; adminUsername: string; initialPassword: string }) {
