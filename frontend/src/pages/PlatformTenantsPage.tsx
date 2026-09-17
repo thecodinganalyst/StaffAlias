@@ -1,0 +1,90 @@
+import { Button, Card, Form, Input, Modal, Space, Table, Typography, message } from "antd";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ApiError, apiFetch } from "../api/http";
+
+interface Tenant {
+  id: string;
+  code: string;
+  name: string;
+}
+
+interface ProvisioningResponse {
+  tenant: Tenant;
+  tenantAdmin: { id: string; username: string; role: string; tenantId: string };
+}
+
+export function PlatformTenantsPage() {
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form] = Form.useForm();
+
+  async function load() {
+    setLoading(true);
+    try {
+      setTenants(await apiFetch<Tenant[]>("/api/platform/tenants"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function createTenant(values: { code: string; name: string; adminUsername: string; initialPassword: string }) {
+    setSubmitting(true);
+    try {
+      const result = await apiFetch<ProvisioningResponse>("/api/platform/tenants", {
+        method: "POST",
+        body: JSON.stringify(values),
+      });
+      message.success(`Tenant ${result.tenant.code} and admin ${result.tenantAdmin.username} created.`);
+      setOpen(false);
+      form.resetFields();
+      await load();
+    } catch (error) {
+      message.error(error instanceof ApiError && error.status === 409 ? error.message : "Unable to create tenant.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card>
+      <Space direction="vertical" size="large" style={{ width: "100%" }}>
+        <Space style={{ width: "100%", justifyContent: "space-between" }}>
+          <div>
+            <Typography.Title level={2} style={{ marginBottom: 0 }}>Tenants</Typography.Title>
+            <Typography.Text type="secondary">Platform-wide tenant administration</Typography.Text>
+          </div>
+          <Button type="primary" onClick={() => setOpen(true)}>Create tenant</Button>
+        </Space>
+        <Table
+          rowKey="id"
+          loading={loading}
+          dataSource={tenants}
+          pagination={false}
+          columns={[
+            { title: "Code", dataIndex: "code" },
+            { title: "Name", dataIndex: "name" },
+            { title: "", key: "actions", render: (_, tenant: Tenant) => <Link to={`/platform/tenants/${tenant.id}`}>View</Link> },
+          ]}
+        />
+      </Space>
+      <Modal title="Create tenant and initial admin" open={open} onCancel={() => setOpen(false)} footer={null} destroyOnHidden>
+        <Form form={form} layout="vertical" onFinish={createTenant} requiredMark={false}>
+          <Form.Item name="code" label="Tenant code" rules={[{ required: true }, { max: 64 }]}><Input /></Form.Item>
+          <Form.Item name="name" label="Tenant name" rules={[{ required: true }, { max: 200 }]}><Input /></Form.Item>
+          <Form.Item name="adminUsername" label="Initial admin username" rules={[{ required: true }, { max: 200 }]}><Input autoComplete="off" /></Form.Item>
+          <Form.Item name="initialPassword" label="Temporary password" extra="Minimum 12 characters. Share it securely with the tenant administrator." rules={[{ required: true }, { min: 12 }, { max: 200 }]}>
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" loading={submitting} block>Create tenant</Button>
+        </Form>
+      </Modal>
+    </Card>
+  );
+}
