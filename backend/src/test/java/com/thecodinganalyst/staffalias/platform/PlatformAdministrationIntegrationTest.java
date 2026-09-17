@@ -1,5 +1,6 @@
 package com.thecodinganalyst.staffalias.platform;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -53,7 +54,7 @@ class PlatformAdministrationIntegrationTest {
     }
 
     @Test
-    void platformAdminCanListViewAndCreateTenants() throws Exception {
+    void platformAdminCanListViewAndProvisionTenantWithInitialAdmin() throws Exception {
         mockMvc.perform(get("/api/platform/tenants").with(httpBasic("platform", "platform-pass")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].code").value("EXISTING"));
@@ -66,27 +67,69 @@ class PlatformAdministrationIntegrationTest {
         mockMvc.perform(post("/api/platform/tenants")
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"code\":\"NEWCO\",\"name\":\"New Company\"}"))
+                        .content("""
+                                {"code":"NEWCO","name":"New Company","adminUsername":"new-admin","initialPassword":"StrongPass123!"}
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/platform/tenants/")))
-                .andExpect(jsonPath("$.code").value("NEWCO"))
-                .andExpect(jsonPath("$.name").value("New Company"));
+                .andExpect(jsonPath("$.tenant.code").value("NEWCO"))
+                .andExpect(jsonPath("$.tenant.name").value("New Company"))
+                .andExpect(jsonPath("$.tenantAdmin.username").value("new-admin"))
+                .andExpect(jsonPath("$.tenantAdmin.role").value("TENANT_ADMIN"))
+                .andExpect(jsonPath("$.tenantAdmin.password").doesNotExist())
+                .andExpect(jsonPath("$.tenantAdmin.passwordHash").doesNotExist());
+
+        Tenant createdTenant = tenantRepository.findByCode("NEWCO").orElseThrow();
+        ApplicationUser createdAdmin = userRepository.findByUsernameIgnoreCase("new-admin").orElseThrow();
+        assertThat(createdAdmin.getTenant().getId()).isEqualTo(createdTenant.getId());
+        assertThat(passwordEncoder.matches("StrongPass123!", createdAdmin.getPasswordHash())).isTrue();
     }
 
     @Test
-    void tenantAdminAndAnonymousUsersCannotAccessPlatformAdministration() throws Exception {
-        mockMvc.perform(get("/api/platform/tenants"))
+    void tenantAdminAndAnonymousUsersCannotProvisionTenants() throws Exception {
+        String body = """
+                {"code":"BLOCKED","name":"Blocked","adminUsername":"blocked-admin","initialPassword":"StrongPass123!"}
+                """;
+        mockMvc.perform(post("/api/platform/tenants")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/platform/tenants").with(httpBasic("tenant-admin", "tenant-pass")))
+        mockMvc.perform(post("/api/platform/tenants")
+                        .with(httpBasic("tenant-admin", "tenant-pass"))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isForbidden());
+        assertThat(tenantRepository.findByCode("BLOCKED")).isEmpty();
     }
 
     @Test
-    void invalidTenantCreationIsRejected() throws Exception {
+    void duplicateTenantCodeAndUsernameReturnConflictWithoutPartialProvisioning() throws Exception {
         mockMvc.perform(post("/api/platform/tenants")
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"code\":\"\",\"name\":\"\"}"))
+                        .content("""
+                                {"code":"EXISTING","name":"Duplicate","adminUsername":"other-admin","initialPassword":"StrongPass123!"}
+                                """))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/api/platform/tenants")
+                        .with(httpBasic("platform", "platform-pass"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"ROLLBACK","name":"Rollback Tenant","adminUsername":"tenant-admin","initialPassword":"StrongPass123!"}
+                                """))
+                .andExpect(status().isConflict());
+
+        assertThat(tenantRepository.findByCode("ROLLBACK")).isEmpty();
+        assertThat(userRepository.findByUsernameIgnoreCase("other-admin")).isEmpty();
+    }
+
+    @Test
+    void invalidProvisioningRequestIsRejected() throws Exception {
+        mockMvc.perform(post("/api/platform/tenants")
+                        .with(httpBasic("platform", "platform-pass"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code":"","name":"","adminUsername":"","initialPassword":"short"}
+                                """))
                 .andExpect(status().isBadRequest());
     }
 }
