@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import com.thecodinganalyst.staffalias.platform.PlatformTenantAdminService.TenantProvisioningResult;
 import com.thecodinganalyst.staffalias.tenant.Tenant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -37,20 +38,45 @@ public class PlatformTenantAdminController {
     }
 
     @PostMapping
-    public ResponseEntity<TenantResponse> create(@Valid @RequestBody CreateTenantRequest request) {
-        Tenant tenant = service.createTenant(request.code().trim(), request.name().trim());
+    public ResponseEntity<TenantProvisioningResponse> create(@Valid @RequestBody CreateTenantRequest request) {
+        TenantProvisioningResult result = service.provisionTenant(
+                request.code().trim(),
+                request.name().trim(),
+                request.adminUsername().trim(),
+                request.initialPassword());
+        Tenant tenant = result.tenant();
         return ResponseEntity.created(URI.create("/api/platform/tenants/" + tenant.getId()))
-                .body(TenantResponse.from(tenant));
+                .body(TenantProvisioningResponse.from(result));
     }
 
     public record CreateTenantRequest(
             @NotBlank @Size(max = 64) String code,
-            @NotBlank @Size(max = 200) String name) {
+            @NotBlank @Size(max = 200) String name,
+            @NotBlank @Size(max = 200) String adminUsername,
+            @NotBlank @Size(min = 12, max = 200) String initialPassword) {
     }
 
     public record TenantResponse(UUID id, String code, String name) {
         static TenantResponse from(Tenant tenant) {
             return new TenantResponse(tenant.getId(), tenant.getCode(), tenant.getName());
+        }
+    }
+
+    public record TenantAdminResponse(UUID id, String username, String role, UUID tenantId) {
+        static TenantAdminResponse from(TenantProvisioningResult result) {
+            return new TenantAdminResponse(
+                    result.tenantAdmin().getId(),
+                    result.tenantAdmin().getUsername(),
+                    result.tenantAdmin().getRole().name(),
+                    result.tenant().getId());
+        }
+    }
+
+    public record TenantProvisioningResponse(TenantResponse tenant, TenantAdminResponse tenantAdmin) {
+        static TenantProvisioningResponse from(TenantProvisioningResult result) {
+            return new TenantProvisioningResponse(
+                    TenantResponse.from(result.tenant()),
+                    TenantAdminResponse.from(result));
         }
     }
 }
