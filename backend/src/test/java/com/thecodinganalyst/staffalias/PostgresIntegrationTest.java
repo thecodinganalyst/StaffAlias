@@ -26,31 +26,28 @@ class PostgresIntegrationTest {
 
     @Test
     void applicationUsesPostgresAndRunsAllFlywayMigrationsFromCleanDatabase() {
-        String databaseProduct = jdbcTemplate.queryForObject(
-                "select version()",
-                String.class);
+        String databaseProduct = jdbcTemplate.queryForObject("select version()", String.class);
         List<String> successfulVersions = jdbcTemplate.queryForList(
                 "select version from flyway_schema_history where success = true and version is not null order by installed_rank",
                 String.class);
         Integer failedMigrationCount = jdbcTemplate.queryForObject(
-                "select count(*) from flyway_schema_history where success = false",
-                Integer.class);
+                "select count(*) from flyway_schema_history where success = false", Integer.class);
 
         assertThat(databaseProduct).containsIgnoringCase("PostgreSQL");
-        assertThat(successfulVersions).containsExactly("1", "2", "3");
+        assertThat(successfulVersions).containsExactly("1", "2", "3", "4");
         assertThat(failedMigrationCount).isZero();
 
         assertThat(tableExists("tenant")).isTrue();
         assertThat(tableExists("person")).isTrue();
         assertThat(tableExists("employment")).isTrue();
         assertThat(tableExists("employment_identifier")).isTrue();
+        assertThat(tableExists("application_user")).isTrue();
     }
 
     private boolean tableExists(String tableName) {
         Boolean exists = jdbcTemplate.queryForObject(
                 "select exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = ?)",
-                Boolean.class,
-                tableName);
+                Boolean.class, tableName);
         return Boolean.TRUE.equals(exists);
     }
 }
