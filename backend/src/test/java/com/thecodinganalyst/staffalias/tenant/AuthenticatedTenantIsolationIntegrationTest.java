@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.thecodinganalyst.staffalias.employment.Employment;
+import com.thecodinganalyst.staffalias.employment.EmploymentIdentifier;
 import com.thecodinganalyst.staffalias.employment.EmploymentIdentifierRepository;
 import com.thecodinganalyst.staffalias.employment.EmploymentRepository;
 import com.thecodinganalyst.staffalias.employment.StaffLifecycleService;
@@ -71,6 +72,7 @@ class AuthenticatedTenantIsolationIntegrationTest {
     private TenantSetting settingB;
     private Person personB;
     private Employment employmentB;
+    private EmploymentIdentifier identifierB;
 
     @BeforeEach
     void setUp() {
@@ -94,6 +96,7 @@ class AuthenticatedTenantIsolationIntegrationTest {
         settingB = settingService.create("region", "B");
         personB = lifecycleService.createPerson("Tenant", "Bee");
         employmentB = lifecycleService.createEmployment(personB.getId(), LocalDate.of(2026, 1, 1), null, "B-001");
+        identifierB = lifecycleService.identifiersForEmployment(employmentB.getId()).get(0);
         tenantContext.clear();
     }
 
@@ -113,14 +116,22 @@ class AuthenticatedTenantIsolationIntegrationTest {
                         .with(httpBasic("admin-b", "password-b")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(employmentB.getId().toString()));
+
+        mockMvc.perform(get("/api/tenant/probe/identifiers/{id}", identifierB.getId())
+                        .with(httpBasic("admin-b", "password-b")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(identifierB.getId().toString()));
     }
 
     @Test
-    void tenantAdminCannotReadAnotherTenantsPersonEmploymentOrSetting() throws Exception {
+    void tenantAdminCannotReadAnotherTenantsPersonEmploymentIdentifierOrSetting() throws Exception {
         mockMvc.perform(get("/api/tenant/probe/people/{id}", personB.getId())
                         .with(httpBasic("admin-a", "password-a")))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/tenant/probe/employments/{id}", employmentB.getId())
+                        .with(httpBasic("admin-a", "password-a")))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/tenant/probe/identifiers/{id}", identifierB.getId())
                         .with(httpBasic("admin-a", "password-a")))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/tenant/probe/settings/{id}", settingB.getId())
@@ -218,6 +229,12 @@ class AuthenticatedTenantIsolationIntegrationTest {
         Map<String, Object> employment(@PathVariable UUID id) {
             Employment employment = lifecycle.getEmployment(id);
             return Map.of("id", employment.getId(), "tenantId", employment.getTenant().getId());
+        }
+
+        @GetMapping("/identifiers/{id}")
+        Map<String, Object> identifier(@PathVariable UUID id) {
+            EmploymentIdentifier identifier = lifecycle.getIdentifier(id);
+            return Map.of("id", identifier.getId(), "employeeId", identifier.getEmployeeId());
         }
 
         @PostMapping("/people/{id}/employments")
