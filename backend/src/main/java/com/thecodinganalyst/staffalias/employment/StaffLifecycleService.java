@@ -38,6 +38,13 @@ public class StaffLifecycleService {
         return personRepository.save(new Person(tenant, firstName, lastName));
     }
 
+    @Transactional(readOnly = true)
+    public Person getPerson(UUID personId) {
+        UUID tenantId = tenantContext.requireTenantId();
+        return personRepository.findByIdAndTenantId(personId, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+    }
+
     public Employment createEmployment(UUID personId, LocalDate startDate, LocalDate endDate,
             String employeeId) {
         UUID tenantId = tenantContext.requireTenantId();
@@ -53,6 +60,13 @@ public class StaffLifecycleService {
         return employment;
     }
 
+    @Transactional(readOnly = true)
+    public Employment getEmployment(UUID employmentId) {
+        UUID tenantId = tenantContext.requireTenantId();
+        return employmentRepository.findByIdAndTenantId(employmentId, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Employment not found"));
+    }
+
     public EmploymentIdentifier addEmployeeId(UUID employmentId, String employeeId,
             LocalDate effectiveFrom, LocalDate effectiveTo) {
         UUID tenantId = tenantContext.requireTenantId();
@@ -61,6 +75,13 @@ public class StaffLifecycleService {
                 .orElseThrow(() -> new EntityNotFoundException("Employment not found"));
         return identifierRepository.saveAndFlush(new EmploymentIdentifier(
                 tenant, employment, employeeId, effectiveFrom, effectiveTo));
+    }
+
+    @Transactional(readOnly = true)
+    public EmploymentIdentifier getIdentifier(UUID identifierId) {
+        UUID tenantId = tenantContext.requireTenantId();
+        return identifierRepository.findByIdAndTenantId(identifierId, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Employment identifier not found"));
     }
 
     @Transactional(readOnly = true)
