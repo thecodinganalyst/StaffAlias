@@ -16,6 +16,14 @@ spring:
     validate-on-migrate: true
     clean-disabled: true
 
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
+        same-site: none
+
 staffalias:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}

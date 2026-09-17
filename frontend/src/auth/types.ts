@@ -1,10 +1,13 @@
+export type ApplicationRole = "PLATFORM_ADMIN" | "TENANT_ADMIN";
+
 export interface AuthenticatedUser {
-  id: string;
-  displayName: string;
-  tenantCode?: string;
+  userId: string;
+  username: string;
+  role: ApplicationRole;
+  tenantId?: string;
 }
 
 export interface AuthState {
   user: AuthenticatedUser | null;
-  isAuthenticated: boolean;
+  loading: boolean;
 }
