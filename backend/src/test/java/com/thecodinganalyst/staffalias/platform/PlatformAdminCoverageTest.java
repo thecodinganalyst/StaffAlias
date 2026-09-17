@@ -40,7 +40,7 @@ class PlatformAdminCoverageTest {
     }
 
     @Test
-    void bootstrapIsNoopWhenUnconfiguredOrExistingAndRejectsPartialConfiguration() throws Exception {
+    void bootstrapIsIdempotentAndRejectsInvalidConfiguration() throws Exception {
         ApplicationUserRepository users = Mockito.mock(ApplicationUserRepository.class);
         PasswordEncoder encoder = Mockito.mock(PasswordEncoder.class);
 
@@ -58,6 +58,14 @@ class PlatformAdminCoverageTest {
         assertThatThrownBy(() -> new PlatformAdminBootstrap(users, encoder, "platform", "")
                 .run(new DefaultApplicationArguments(new String[0])))
                 .isInstanceOf(IllegalStateException.class);
+
+        Tenant tenant = new Tenant("ACME", "Acme");
+        when(users.findByUsernameIgnoreCase("occupied"))
+                .thenReturn(Optional.of(new ApplicationUser("occupied", "existing",
+                        ApplicationRole.TENANT_ADMIN, tenant)));
+        assertThatThrownBy(() -> new PlatformAdminBootstrap(users, encoder, "occupied", "secret")
+                .run(new DefaultApplicationArguments(new String[0])))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -65,10 +73,14 @@ class PlatformAdminCoverageTest {
         TenantRepository tenants = Mockito.mock(TenantRepository.class);
         PlatformTenantAdminService service = new PlatformTenantAdminService(tenants);
         Tenant existing = new Tenant("ACME", "Acme");
+        UUID existingId = UUID.randomUUID();
         UUID missing = UUID.randomUUID();
 
         when(tenants.findAll()).thenReturn(List.of(existing));
         assertThat(service.listTenants()).containsExactly(existing);
+
+        when(tenants.findById(existingId)).thenReturn(Optional.of(existing));
+        assertThat(service.getTenant(existingId)).isSameAs(existing);
 
         when(tenants.findById(missing)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.getTenant(missing)).isInstanceOf(EntityNotFoundException.class);
