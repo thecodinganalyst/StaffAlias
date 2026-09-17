@@ -69,8 +69,10 @@ jobs:
           SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
           IMAGE_URI: ${{ steps.image.outputs.uri }}
           FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+          PLATFORM_ADMIN_USERNAME: ${{ vars.PLATFORM_ADMIN_USERNAME }}
         run: |
           test -n "${FIREBASE_HOSTING_SITE}"
+          test -n "${PLATFORM_ADMIN_USERNAME}"
           FRONTEND_ORIGINS="https://${FIREBASE_HOSTING_SITE}.web.app;https://${FIREBASE_HOSTING_SITE}.firebaseapp.com"
           gcloud run deploy "${SERVICE}" \
             --project "${PROJECT_ID}" \
@@ -84,8 +86,8 @@ jobs:
             --max 3 \
             --concurrency 80 \
             --timeout 300 \
-            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,CORS_ALLOWED_ORIGINS=${FRONTEND_ORIGINS}" \
-            --update-secrets DB_URL=staffalias-db-url:latest,DB_USERNAME=staffalias-db-username:latest,DB_PASSWORD=staffalias-db-password:latest \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,CORS_ALLOWED_ORIGINS=${FRONTEND_ORIGINS},PLATFORM_ADMIN_USERNAME=${PLATFORM_ADMIN_USERNAME}" \
+            --update-secrets DB_URL=staffalias-db-url:latest,DB_USERNAME=staffalias-db-username:latest,DB_PASSWORD=staffalias-db-password:latest,PLATFORM_ADMIN_PASSWORD=staffalias-platform-admin-password:latest \
             --quiet
 
       - name: Resolve deployed service URL and revision

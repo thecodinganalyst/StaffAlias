@@ -37,6 +37,7 @@ Configure these variables on the GitHub `production` environment:
 | `GCP_ARTIFACT_REGISTRY` | Artifact Registry repository name |
 | `GCP_CLOUD_RUN_SERVICE` | Production Cloud Run service name |
 | `FIREBASE_HOSTING_SITE` | Firebase Hosting site ID |
+| `PLATFORM_ADMIN_USERNAME` | Initial Platform Admin username (use `platformadmin` in production) |
 
 The GitHub `production` environment should require reviewer approval. This keeps production deployment explicit even though the workflow itself is manually dispatched.
 
@@ -47,8 +48,17 @@ Backend deployment reads the following Google Secret Manager secrets and maps th
 - `staffalias-db-url` -> `DB_URL`
 - `staffalias-db-username` -> `DB_USERNAME`
 - `staffalias-db-password` -> `DB_PASSWORD`
+- `staffalias-platform-admin-password` -> `PLATFORM_ADMIN_PASSWORD`
 
-Do not store the database password directly in the repository or workflow YAML.
+Do not store database or Platform Admin passwords directly in the repository or workflow YAML.
+
+### Platform Admin production bootstrap
+
+Set the GitHub production environment variable `PLATFORM_ADMIN_USERNAME` to `platformadmin`. Create the Google Secret Manager secret `staffalias-platform-admin-password` containing the initial password. The backend deployment maps these values to `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD`.
+
+Both values are required together. On the first startup, StaffAlias creates the platform-scoped `PLATFORM_ADMIN` account and stores only its BCrypt password hash. On subsequent deployments, bootstrap detects the existing account and leaves its stored password unchanged; changing the Secret Manager value alone therefore does not reset an existing account.
+
+Do not print, echo, or expose the plaintext password in GitHub Actions, Cloud Run logs, API responses, frontend configuration, or source control.
 
 ## Supabase production configuration
 
