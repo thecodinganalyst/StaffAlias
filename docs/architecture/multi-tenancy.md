@@ -33,7 +33,7 @@ For authenticated `TENANT_ADMIN` requests, `TenantContextSecurityFilter` derives
 
 `PLATFORM_ADMIN` requests intentionally do not establish tenant context. Platform operations must use explicitly platform-scoped services rather than silently impersonating a tenant.
 
-Request controllers must not independently parse or resolve tenant IDs. No production API may trust a tenant ID supplied in a request header, URL, query parameter, or payload as authority for tenant selection.
+Request controllers must not independently parse or resolve tenant IDs. No production API may trust a tenant ID supplied in a request header, URL, query parameter, or payload as authority for tenant selection. If a request happens to contain tenant identity, it is descriptive input only and cannot override authenticated scope.
 
 ## Tenant-owned data
 
@@ -47,7 +47,7 @@ Example:
 settingRepository.findByIdAndTenant_Id(id, tenantContext.requireTenantId());
 ```
 
-The initial `tenant_setting` aggregate demonstrates this pattern.
+Person, Employment, EmploymentIdentifier, and tenant settings all follow this rule. Single-record lifecycle lookups use tenant-scoped repository methods so a valid technical ID from another tenant cannot be used as a cross-tenant capability.
 
 ## Uniqueness
 
@@ -61,9 +61,11 @@ The same principle applies to employee IDs and other company-specific codes. Glo
 
 ## Cross-tenant behavior
 
-A record owned by another tenant is treated as not found. Services must not reveal whether another tenant owns the supplied technical ID. Read, update, and delete operations therefore use tenant-scoped lookup before acting.
+A record owned by another tenant is treated as not found. Services must not reveal whether another tenant owns the supplied technical ID. Read, update, and delete operations therefore use tenant-scoped lookup before acting. At the HTTP boundary, `EntityNotFoundException` is translated to HTTP 404 for this convention.
 
-Automated PostgreSQL integration tests must cover cross-tenant reads, updates, and deletes for tenant-owned aggregates. Security integration tests additionally verify authentication, role boundaries, and that manipulated client tenant headers do not change effective tenant scope.
+Authenticated integration tests must exercise tenant isolation through the same Spring Security and `TenantContextSecurityFilter` boundary used by production requests. Current coverage verifies that Tenant A administrators cannot read Person, Employment, EmploymentIdentifier, or tenant-setting records from Tenant B; cannot update or delete Tenant B settings; cannot create an employment under a Tenant B person; and cannot override their effective tenant by manipulating request headers or payload fields.
+
+Platform administrators do not implicitly bypass these tenant-user workflows. Platform-wide operations must have explicit `/api/platform/**` APIs and services. Requests by a platform administrator to `/api/tenant/**` are rejected by role authorization rather than being granted an arbitrary tenant context.
 
 ## Rules for new features
 
@@ -73,10 +75,11 @@ Automated PostgreSQL integration tests must cover cross-tenant reads, updates, a
 4. Put `tenant_id` into tenant-local uniqueness constraints.
 5. Scope repository methods by the authenticated current tenant.
 6. Do not accept a tenant ID from request data as authorization.
-7. Add isolation tests whenever a new tenant-owned aggregate is introduced.
+7. Add authenticated cross-tenant isolation tests whenever a new tenant-owned aggregate is introduced.
 8. Clear thread-local tenant context at the request boundary to prevent context leakage between requests.
 9. Protect platform APIs with `PLATFORM_ADMIN` and tenant APIs with `TENANT_ADMIN`; hidden frontend routes are never a substitute for backend authorization.
+10. Treat cross-tenant record IDs as not found rather than revealing whether another tenant owns them.
 
 ## Future hardening
 
-Application-level isolation is the first layer. PostgreSQL Row-Level Security may be evaluated later as defense in depth, but it does not replace correctly tenant-scoped application queries and tests.
+Application-level isolation is the first layer. PostgreSQL Row-Level Security may be evaluated later as defense in depth, but it does not replace correctly tenant-scoped application queries and authenticated isolation tests.
