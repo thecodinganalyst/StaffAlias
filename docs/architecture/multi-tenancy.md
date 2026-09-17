@@ -17,6 +17,14 @@ Application accounts are stored in `application_user`. Passwords are stored only
 
 The initial backend authentication mechanism is HTTP Basic so the authorization boundary can be established independently of the later frontend login/session flow. Authentication UX can evolve without changing the domain's tenant isolation model.
 
+## Tenant provisioning
+
+A `PLATFORM_ADMIN` provisions a new tenant and its first `TENANT_ADMIN` through one platform operation. Tenant creation and administrator creation run in the same database transaction, so a failed administrator creation cannot leave a tenant without its initial administrator.
+
+The provisioning request supplies a temporary initial password. StaffAlias immediately hashes it with the configured `PasswordEncoder`; neither the plaintext password nor the hash is returned by the API or written to application logs. The initial password must be at least 12 characters. This is an interim bootstrap mechanism designed to be replaceable by a future invitation/password-reset flow without changing the tenant ownership model.
+
+Tenant codes are globally unique. Application usernames are globally unique case-insensitively. Duplicate tenant codes or administrator usernames are rejected with HTTP 409 before provisioning completes.
+
 ## Tenant context
 
 Backend code must obtain the current tenant only through `TenantContext`. `ThreadLocalTenantContext` is the initial implementation.
