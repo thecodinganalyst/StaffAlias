@@ -1,6 +1,18 @@
 name: Production Release
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'firebase.json'
+      - '.firebaserc'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/deploy-backend.yml'
+      - '.github/workflows/deploy-frontend.yml'
+      - '.github/workflows/production-release.yml'
   workflow_dispatch:
 
 permissions:

@@ -43,6 +43,12 @@ resource "google_project_iam_member" "terraform" {
   member  = "serviceAccount:${google_service_account.terraform.email}"
 }
 
+resource "google_project_iam_member" "runtime_secret_accessor" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
+}
+
 resource "google_project_iam_member" "deployment_cloud_run_admin" {
   project = var.project_id
   role    = "roles/run.admin"
