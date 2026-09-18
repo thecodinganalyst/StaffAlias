@@ -9,7 +9,7 @@ This directory contains Terraform for the existing StaffAlias production GCP pro
 - Cloud Run v2 backend service skeleton
 - Dedicated runtime and deployment service accounts
 - Least-privilege deployment IAM needed for GitHub Actions deployment
-- Secret Manager containers for `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`
+- Secret Manager containers for `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `PLATFORM_ADMIN_PASSWORD`
 
 Terraform creates only the secret containers. **Do not put real secret values in `terraform.tfvars`, Terraform resources, or source control.** Secret values are added separately and consumed by the production deployment workflow.
 
@@ -32,12 +32,12 @@ The `Deploy Backend to Cloud Run` GitHub Actions workflow owns release-specific 
 
 - immutable StaffAlias container image
 - `SPRING_PROFILES_ACTIVE`
-- `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` Secret Manager bindings
+- `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `PLATFORM_ADMIN_PASSWORD` Secret Manager bindings
 - other application runtime environment values applied with `gcloud run deploy`
 
 The Cloud Run Terraform resource therefore ignores changes to the deployed image and container environment after creation. This prevents a later `terraform apply` from rolling a production deployment back to the bootstrap image or deleting Secret Manager bindings. The bootstrap `cloud_run_image` value is still used when Terraform creates a new Cloud Run service from scratch.
 
-Always review a production `terraform plan`. A normal post-deployment plan must **not** propose replacing the StaffAlias image with the Google hello image or removing the three database secret bindings.
+Always review a production `terraform plan`. A normal post-deployment plan must **not** propose replacing the StaffAlias image with the Google hello image or removing the application secret bindings.
 
 ## Prerequisites
 
@@ -99,14 +99,15 @@ Useful outputs include the Artifact Registry URL, Cloud Run service URI, runtime
 terraform output
 ```
 
-## Add production database secret values
+## Add production secret values
 
-Issue #29 defines the exact Supabase production database configuration. Once those values are known, add **secret versions** outside Terraform so their plaintext values do not enter Terraform state. For example:
+Terraform creates the secret containers and IAM bindings only. Add **secret versions** outside Terraform so plaintext values do not enter Terraform state. Issue #29 defines the Supabase production database configuration; the Platform Admin password is handled the same way. For example:
 
 ```bash
 printf '%s' "$DB_URL" | gcloud secrets versions add staffalias-db-url --data-file=- --project YOUR_GCP_PROJECT_ID
 printf '%s' "$DB_USERNAME" | gcloud secrets versions add staffalias-db-username --data-file=- --project YOUR_GCP_PROJECT_ID
 printf '%s' "$DB_PASSWORD" | gcloud secrets versions add staffalias-db-password --data-file=- --project YOUR_GCP_PROJECT_ID
+printf '%s' "$PLATFORM_ADMIN_PASSWORD" | gcloud secrets versions add staffalias-platform-admin-password --data-file=- --project YOUR_GCP_PROJECT_ID
 ```
 
 Do not paste production credentials into shell history if your environment records commands; using a secure local environment variable or secret-management workflow is preferred.

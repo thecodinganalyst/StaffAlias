@@ -3,6 +3,7 @@ locals {
     "staffalias-db-url",
     "staffalias-db-username",
     "staffalias-db-password",
+    "staffalias-platform-admin-password",
   ])
 }
 

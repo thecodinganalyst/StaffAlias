@@ -54,7 +54,7 @@ Do not store database or Platform Admin passwords directly in the repository or 
 
 ### Platform Admin production bootstrap
 
-Set the GitHub production environment variable `PLATFORM_ADMIN_USERNAME` to `platformadmin`. Create the Google Secret Manager secret `staffalias-platform-admin-password` containing the initial password. The backend deployment maps these values to `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD`.
+Set the GitHub production environment variable `PLATFORM_ADMIN_USERNAME` to `platformadmin`. Terraform creates the Google Secret Manager container `staffalias-platform-admin-password` and grants the runtime service account access. After Terraform apply, add a secret version containing the initial password; do not manage the secret value in Terraform. The backend deployment maps these values to `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD`.
 
 Both values are required together. On the first startup, StaffAlias creates the platform-scoped `PLATFORM_ADMIN` account and stores only its BCrypt password hash. On subsequent deployments, bootstrap detects the existing account and leaves its stored password unchanged; changing the Secret Manager value alone therefore does not reset an existing account.
 
