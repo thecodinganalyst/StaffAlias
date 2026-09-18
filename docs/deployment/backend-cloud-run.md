@@ -18,6 +18,7 @@ Before running the deployment workflow:
    - `staffalias-db-url`
    - `staffalias-db-username`
    - `staffalias-db-password`
+   - `staffalias-platform-admin-password`
 4. The runtime service account created by Terraform has Secret Manager access.
 
 `GCP_PROJECT_ID` must be the textual project ID, not the numeric project number.
