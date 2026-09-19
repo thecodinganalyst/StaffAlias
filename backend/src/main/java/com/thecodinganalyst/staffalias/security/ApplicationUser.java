@@ -59,7 +59,12 @@ public class ApplicationUser {
     public UUID getId() { return id; }
     public String getUsername() { return username; }
     public String getPasswordHash() { return passwordHash; }
+    public String getEmail() { return email; }
     public ApplicationRole getRole() { return role; }
     public Tenant getTenant() { return tenant; }
     public boolean isEnabled() { return enabled; }
+    public void activate(String passwordHash) {
+        this.passwordHash = passwordHash;
+        this.enabled = true;
+    }
 }
