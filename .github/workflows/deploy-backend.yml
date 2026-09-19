@@ -69,7 +69,7 @@ jobs:
           SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
           IMAGE_URI: ${{ steps.image.outputs.uri }}
           FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
-          PLATFORM_ADMIN_USERNAME: ${{ vars.PLATFORM_ADMIN_USERNAME }}
+          PLATFORM_ADMIN_USERNAME: ${{ vars.PLATFORM_ADMIN_USERNAME }}\n          RESEND_FROM: ${{ vars.RESEND_FROM }}\n          STAFFALIAS_FRONTEND_URL: ${{ vars.STAFFALIAS_FRONTEND_URL }}
         run: |
           test -n "${FIREBASE_HOSTING_SITE}"
           test -n "${PLATFORM_ADMIN_USERNAME}"
