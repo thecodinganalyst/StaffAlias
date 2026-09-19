@@ -13,7 +13,8 @@ import java.util.UUID;
 
 import com.thecodinganalyst.staffalias.security.ApplicationRole;
 import com.thecodinganalyst.staffalias.security.ApplicationUser;
-import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;\nimport com.thecodinganalyst.staffalias.security.AccountActivationService;
+import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;
+import com.thecodinganalyst.staffalias.security.AccountActivationService;
 import com.thecodinganalyst.staffalias.tenant.Tenant;
 import com.thecodinganalyst.staffalias.tenant.TenantRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -72,8 +73,8 @@ class PlatformAdminCoverageTest {
     void platformTenantServiceCoversProvisioningConflictsAndMissingTenant() {
         TenantRepository tenants = Mockito.mock(TenantRepository.class);
         ApplicationUserRepository users = Mockito.mock(ApplicationUserRepository.class);
-        PasswordEncoder encoder = Mockito.mock(PasswordEncoder.class);
-        PlatformTenantAdminService service = new PlatformTenantAdminService(tenants, users, encoder);
+        AccountActivationService activation = Mockito.mock(AccountActivationService.class);
+        PlatformTenantAdminService service = new PlatformTenantAdminService(tenants, users, activation);
         Tenant existing = new Tenant("ACME", "Acme");
         UUID existingId = UUID.randomUUID();
         UUID missing = UUID.randomUUID();
@@ -99,13 +100,16 @@ class PlatformAdminCoverageTest {
         when(users.findByUsernameIgnoreCase("new-admin@example.com")).thenReturn(Optional.empty());
         when(tenants.save(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(users.save(any(ApplicationUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(encoder.encode("initial-pass-1")).thenReturn("encoded");
+        when(activation.issue(any(ApplicationUser.class), org.mockito.ArgumentMatchers.eq("New Tenant"))).thenReturn(true);
 
         PlatformTenantAdminService.TenantProvisioningResult result =
                 service.provisionTenant("NEW", "New Tenant", "new-admin@example.com");
         assertThat(result.tenant().getCode()).isEqualTo("NEW");
         assertThat(result.tenantAdmin().getRole()).isEqualTo(ApplicationRole.TENANT_ADMIN);
         assertThat(result.tenantAdmin().getTenant()).isSameAs(result.tenant());
-        assertThat(result.tenantAdmin().getPasswordHash()).isNull();\n        assertThat(result.tenantAdmin().getEmail()).isEqualTo("new-admin@example.com");\n        assertThat(result.tenantAdmin().isEnabled()).isFalse();\n        assertThat(result.activationEmailSent()).isTrue();
+        assertThat(result.tenantAdmin().getPasswordHash()).isNull();
+        assertThat(result.tenantAdmin().getEmail()).isEqualTo("new-admin@example.com");
+        assertThat(result.tenantAdmin().isEnabled()).isFalse();
+        assertThat(result.activationEmailSent()).isTrue();
     }
 }
