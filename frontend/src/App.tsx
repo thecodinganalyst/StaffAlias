@@ -7,7 +7,8 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { AppShell } from "./components/AppShell";
 import { staffAliasTheme } from "./config/theme";
-import { AccessDeniedPage } from "./pages/AccessDeniedPage";\nimport { ActivationPage } from "./pages/ActivationPage";
+import { AccessDeniedPage } from "./pages/AccessDeniedPage";
+import { ActivationPage } from "./pages/ActivationPage";
 import { HealthPage } from "./pages/HealthPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -24,7 +25,8 @@ export function App() {
           <Refine dataProvider={dataProvider}>
             <AuthProvider>
               <Routes>
-                <Route path="/login" element={<LoginPage />} />\n                <Route path="/activate" element={<ActivationPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/activate" element={<ActivationPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppShell />}>
                     <Route index element={<HomePage />} />
