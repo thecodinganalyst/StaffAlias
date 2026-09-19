@@ -26,7 +26,10 @@ public class ApplicationUser {
     @Column(nullable = false, unique = true, length = 200)
     private String username;
 
-    @Column(name = "password_hash", nullable = false, length = 100)
+    @Column(length = 320)
+    private String email;
+
+    @Column(name = "password_hash", length = 100)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
@@ -63,6 +66,8 @@ public class ApplicationUser {
     public ApplicationRole getRole() { return role; }
     public Tenant getTenant() { return tenant; }
     public boolean isEnabled() { return enabled; }
+    public void setEmail(String email) { this.email = email; }
+    public void disable() { this.enabled = false; }
     public void activate(String passwordHash) {
         this.passwordHash = passwordHash;
         this.enabled = true;
