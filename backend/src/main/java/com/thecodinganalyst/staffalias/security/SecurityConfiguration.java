@@ -21,7 +21,7 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/api/system/database-readiness", "/api/auth/login").permitAll()
+                        .requestMatchers("/actuator/health", "/api/system/database-readiness", "/api/auth/login", "/api/auth/activation").permitAll()
                         .requestMatchers("/api/platform/**").hasRole("PLATFORM_ADMIN")
                         .requestMatchers("/api/tenant/**").hasRole("TENANT_ADMIN")
                         .anyRequest().authenticated())
