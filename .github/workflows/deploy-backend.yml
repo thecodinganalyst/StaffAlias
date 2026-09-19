@@ -69,11 +69,26 @@ jobs:
           SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
           IMAGE_URI: ${{ steps.image.outputs.uri }}
           FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
-          PLATFORM_ADMIN_USERNAME: ${{ vars.PLATFORM_ADMIN_USERNAME }}\n          RESEND_FROM: ${{ vars.RESEND_FROM }}\n          STAFFALIAS_FRONTEND_URL: ${{ vars.STAFFALIAS_FRONTEND_URL }}
+          PLATFORM_ADMIN_USERNAME: ${{ vars.PLATFORM_ADMIN_USERNAME }}
+          RESEND_FROM: ${{ vars.RESEND_FROM }}
+          STAFFALIAS_FRONTEND_URL: ${{ vars.STAFFALIAS_FRONTEND_URL }}
         run: |
           test -n "${FIREBASE_HOSTING_SITE}"
           test -n "${PLATFORM_ADMIN_USERNAME}"
           FRONTEND_ORIGINS="https://${FIREBASE_HOSTING_SITE}.web.app;https://${FIREBASE_HOSTING_SITE}.firebaseapp.com"
+          FRONTEND_URL="${STAFFALIAS_FRONTEND_URL:-https://${FIREBASE_HOSTING_SITE}.web.app}"
+
+          RESEND_ENV=""
+          RESEND_SECRET=""
+          if gcloud secrets versions list staffalias-resend-api-key --project "${PROJECT_ID}" --filter='state=ENABLED' --format='value(name)' --limit=1 | grep -q .; then
+            RESEND_SECRET=",RESEND_API_KEY=staffalias-resend-api-key:latest"
+            if [ -n "${RESEND_FROM}" ]; then
+              RESEND_ENV=",RESEND_FROM=${RESEND_FROM}"
+            fi
+          else
+            echo "Resend is not configured; deploying without activation-email delivery."
+          fi
+
           gcloud run deploy "${SERVICE}" \
             --project "${PROJECT_ID}" \
             --region "${REGION}" \
@@ -86,8 +101,8 @@ jobs:
             --max 3 \
             --concurrency 80 \
             --timeout 300 \
-            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,CORS_ALLOWED_ORIGINS=${FRONTEND_ORIGINS},PLATFORM_ADMIN_USERNAME=${PLATFORM_ADMIN_USERNAME}" \
-            --update-secrets DB_URL=staffalias-db-url:latest,DB_USERNAME=staffalias-db-username:latest,DB_PASSWORD=staffalias-db-password:latest,PLATFORM_ADMIN_PASSWORD=staffalias-platform-admin-password:latest \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,CORS_ALLOWED_ORIGINS=${FRONTEND_ORIGINS},PLATFORM_ADMIN_USERNAME=${PLATFORM_ADMIN_USERNAME},STAFFALIAS_FRONTEND_URL=${FRONTEND_URL}${RESEND_ENV}" \
+            --update-secrets "DB_URL=staffalias-db-url:latest,DB_USERNAME=staffalias-db-username:latest,DB_PASSWORD=staffalias-db-password:latest,PLATFORM_ADMIN_PASSWORD=staffalias-platform-admin-password:latest${RESEND_SECRET}" \
             --quiet
 
       - name: Resolve deployed service URL and revision
