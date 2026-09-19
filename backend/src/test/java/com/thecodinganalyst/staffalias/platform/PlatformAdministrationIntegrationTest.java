@@ -68,21 +68,21 @@ class PlatformAdministrationIntegrationTest {
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"NEWCO","name":"New Company","adminUsername":"new-admin","initialPassword":"StrongPass123!"}
+                                {"code":"NEWCO","name":"New Company","adminEmail":"new-admin@example.com"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/platform/tenants/")))
                 .andExpect(jsonPath("$.tenant.code").value("NEWCO"))
                 .andExpect(jsonPath("$.tenant.name").value("New Company"))
-                .andExpect(jsonPath("$.tenantAdmin.username").value("new-admin"))
+                .andExpect(jsonPath("$.tenantAdmin.username").value("new-admin@example.com"))
                 .andExpect(jsonPath("$.tenantAdmin.role").value("TENANT_ADMIN"))
                 .andExpect(jsonPath("$.tenantAdmin.password").doesNotExist())
                 .andExpect(jsonPath("$.tenantAdmin.passwordHash").doesNotExist());
 
         Tenant createdTenant = tenantRepository.findByCode("NEWCO").orElseThrow();
-        ApplicationUser createdAdmin = userRepository.findByUsernameIgnoreCase("new-admin").orElseThrow();
+        ApplicationUser createdAdmin = userRepository.findByUsernameIgnoreCase("new-admin@example.com").orElseThrow();
         assertThat(createdAdmin.getTenant().getId()).isEqualTo(createdTenant.getId());
-        assertThat(passwordEncoder.matches("StrongPass123!", createdAdmin.getPasswordHash())).isTrue();
+        assertThat(createdAdmin.getPasswordHash()).isNull();\n        assertThat(createdAdmin.isEnabled()).isFalse();
     }
 
     @Test
@@ -106,7 +106,7 @@ class PlatformAdministrationIntegrationTest {
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"EXISTING","name":"Duplicate","adminUsername":"other-admin","initialPassword":"StrongPass123!"}
+                                {"code":"EXISTING","name":"Duplicate","adminEmail":"other@example.com"}
                                 """))
                 .andExpect(status().isConflict());
 
@@ -114,12 +114,12 @@ class PlatformAdministrationIntegrationTest {
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"ROLLBACK","name":"Rollback Tenant","adminUsername":"tenant-admin","initialPassword":"StrongPass123!"}
+                                {"code":"ROLLBACK","name":"Rollback Tenant","adminEmail":"tenant-admin"}
                                 """))
                 .andExpect(status().isConflict());
 
         assertThat(tenantRepository.findByCode("ROLLBACK")).isEmpty();
-        assertThat(userRepository.findByUsernameIgnoreCase("other-admin")).isEmpty();
+        assertThat(userRepository.findByUsernameIgnoreCase("other@example.com")).isEmpty();
     }
 
     @Test
@@ -128,7 +128,7 @@ class PlatformAdministrationIntegrationTest {
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"","name":"","adminUsername":"","initialPassword":"short"}
+                                {"code":"","name":"","adminEmail":"not-an-email"}
                                 """))
                 .andExpect(status().isBadRequest());
     }
