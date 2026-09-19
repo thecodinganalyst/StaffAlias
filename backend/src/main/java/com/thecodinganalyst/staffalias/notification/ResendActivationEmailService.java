@@ -17,11 +17,10 @@ public class ResendActivationEmailService implements ActivationEmailService {
 
     public ResendActivationEmailService(
             @Value("${staffalias.email.resend.api-key:}") String apiKey,
-            @Value("${staffalias.email.from:}") String from,
-            RestClient.Builder builder) {
+            @Value("${staffalias.email.from:}") String from) {
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.from = from == null ? "" : from.trim();
-        this.restClient = builder.baseUrl("https://api.resend.com").build();
+        this.restClient = RestClient.builder().baseUrl("https://api.resend.com").build();
     }
 
     @Override
