@@ -49,7 +49,7 @@ class PlatformAdministrationIntegrationTest {
         tenant = tenantRepository.save(new Tenant("EXISTING", "Existing Tenant"));
         userRepository.save(new ApplicationUser("platform", passwordEncoder.encode("platform-pass"),
                 ApplicationRole.PLATFORM_ADMIN, null));
-        userRepository.save(new ApplicationUser("tenant-admin", passwordEncoder.encode("tenant-pass"),
+        userRepository.save(new ApplicationUser("tenant-admin@example.com", passwordEncoder.encode("tenant-pass"),
                 ApplicationRole.TENANT_ADMIN, tenant));
     }
 
@@ -95,7 +95,7 @@ class PlatformAdministrationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/platform/tenants")
-                        .with(httpBasic("tenant-admin", "tenant-pass"))
+                        .with(httpBasic("tenant-admin@example.com", "tenant-pass"))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isForbidden());
         assertThat(tenantRepository.findByCode("BLOCKED")).isEmpty();
@@ -115,7 +115,7 @@ class PlatformAdministrationIntegrationTest {
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"ROLLBACK","name":"Rollback Tenant","adminEmail":"tenant-admin"}
+                                {"code":"ROLLBACK","name":"Rollback Tenant","adminEmail":"tenant-admin@example.com"}
                                 """))
                 .andExpect(status().isConflict());
 
