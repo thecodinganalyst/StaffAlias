@@ -82,13 +82,14 @@ class PlatformAdministrationIntegrationTest {
         Tenant createdTenant = tenantRepository.findByCode("NEWCO").orElseThrow();
         ApplicationUser createdAdmin = userRepository.findByUsernameIgnoreCase("new-admin@example.com").orElseThrow();
         assertThat(createdAdmin.getTenant().getId()).isEqualTo(createdTenant.getId());
-        assertThat(createdAdmin.getPasswordHash()).isNull();\n        assertThat(createdAdmin.isEnabled()).isFalse();
+        assertThat(createdAdmin.getPasswordHash()).isNull();
+        assertThat(createdAdmin.isEnabled()).isFalse();
     }
 
     @Test
     void tenantAdminAndAnonymousUsersCannotProvisionTenants() throws Exception {
         String body = """
-                {"code":"BLOCKED","name":"Blocked","adminUsername":"blocked-admin","initialPassword":"StrongPass123!"}
+                {"code":"BLOCKED","name":"Blocked","adminEmail":"blocked-admin@example.com"}
                 """;
         mockMvc.perform(post("/api/platform/tenants")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
