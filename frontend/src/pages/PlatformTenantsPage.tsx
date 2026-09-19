@@ -11,7 +11,8 @@ interface Tenant {
 
 interface ProvisioningResponse {
   tenant: Tenant;
-  tenantAdmin: { id: string; username: string; role: string; tenantId: string };\n  activationEmailSent: boolean;
+  tenantAdmin: { id: string; username: string; role: string; tenantId: string };
+  activationEmailSent: boolean;
 }
 
 export function PlatformTenantsPage() {
