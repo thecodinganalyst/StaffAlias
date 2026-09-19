@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.thecodinganalyst.staffalias.platform.PlatformTenantAdminService.TenantProvisioningResult;
 import com.thecodinganalyst.staffalias.tenant.Tenant;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;\nimport jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -72,7 +72,7 @@ public class PlatformTenantAdminController {
         }
     }
 
-    public record TenantProvisioningResponse(TenantResponse tenant, TenantAdminResponse tenantAdmin) {
+    public record TenantProvisioningResponse(TenantResponse tenant, TenantAdminResponse tenantAdmin, boolean activationEmailSent) {
         static TenantProvisioningResponse from(TenantProvisioningResult result) {
             return new TenantProvisioningResponse(
                     TenantResponse.from(result.tenant()),
