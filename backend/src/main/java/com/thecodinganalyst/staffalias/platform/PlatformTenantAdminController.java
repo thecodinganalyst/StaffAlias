@@ -7,6 +7,7 @@ import java.util.UUID;
 import com.thecodinganalyst.staffalias.platform.PlatformTenantAdminService.TenantProvisioningResult;
 import com.thecodinganalyst.staffalias.tenant.Tenant;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
@@ -42,8 +43,7 @@ public class PlatformTenantAdminController {
         TenantProvisioningResult result = service.provisionTenant(
                 request.code().trim(),
                 request.name().trim(),
-                request.adminUsername().trim(),
-                request.initialPassword());
+                request.adminEmail().trim());
         Tenant tenant = result.tenant();
         return ResponseEntity.created(URI.create("/api/platform/tenants/" + tenant.getId()))
                 .body(TenantProvisioningResponse.from(result));
@@ -52,8 +52,7 @@ public class PlatformTenantAdminController {
     public record CreateTenantRequest(
             @NotBlank @Size(max = 64) String code,
             @NotBlank @Size(max = 200) String name,
-            @NotBlank @Size(max = 200) String adminUsername,
-            @NotBlank @Size(min = 12, max = 200) String initialPassword) {
+            @NotBlank @Email @Size(max = 320) String adminEmail) {
     }
 
     public record TenantResponse(UUID id, String code, String name) {
@@ -72,11 +71,12 @@ public class PlatformTenantAdminController {
         }
     }
 
-    public record TenantProvisioningResponse(TenantResponse tenant, TenantAdminResponse tenantAdmin) {
+    public record TenantProvisioningResponse(TenantResponse tenant, TenantAdminResponse tenantAdmin, boolean activationEmailSent) {
         static TenantProvisioningResponse from(TenantProvisioningResult result) {
             return new TenantProvisioningResponse(
                     TenantResponse.from(result.tenant()),
-                    TenantAdminResponse.from(result));
+                    TenantAdminResponse.from(result),
+                    result.activationEmailSent());
         }
     }
 }

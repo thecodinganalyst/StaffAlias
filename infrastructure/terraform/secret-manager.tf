@@ -4,6 +4,7 @@ locals {
     "staffalias-db-username",
     "staffalias-db-password",
     "staffalias-platform-admin-password",
+    "staffalias-resend-api-key",
   ])
 }
 

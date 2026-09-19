@@ -34,7 +34,7 @@ class PostgresIntegrationTest {
                 "select count(*) from flyway_schema_history where success = false", Integer.class);
 
         assertThat(databaseProduct).containsIgnoringCase("PostgreSQL");
-        assertThat(successfulVersions).containsExactly("1", "2", "3", "4");
+        assertThat(successfulVersions).containsExactly("1", "2", "3", "4", "5");
         assertThat(failedMigrationCount).isZero();
 
         assertThat(tableExists("tenant")).isTrue();
@@ -42,6 +42,7 @@ class PostgresIntegrationTest {
         assertThat(tableExists("employment")).isTrue();
         assertThat(tableExists("employment_identifier")).isTrue();
         assertThat(tableExists("application_user")).isTrue();
+        assertThat(tableExists("account_activation_token")).isTrue();
     }
 
     private boolean tableExists(String tableName) {

@@ -12,6 +12,7 @@ interface Tenant {
 interface ProvisioningResponse {
   tenant: Tenant;
   tenantAdmin: { id: string; username: string; role: string; tenantId: string };
+  activationEmailSent: boolean;
 }
 
 export function PlatformTenantsPage() {
@@ -48,14 +49,18 @@ export function PlatformTenantsPage() {
     };
   }, []);
 
-  async function createTenant(values: { code: string; name: string; adminUsername: string; initialPassword: string }) {
+  async function createTenant(values: { code: string; name: string; adminEmail: string }) {
     setSubmitting(true);
     try {
       const result = await apiFetch<ProvisioningResponse>("/api/platform/tenants", {
         method: "POST",
         body: JSON.stringify(values),
       });
-      message.success(`Tenant ${result.tenant.code} and admin ${result.tenantAdmin.username} created.`);
+      if (result.activationEmailSent) {
+        message.success(`Tenant ${result.tenant.code} created. Activation email sent to ${result.tenantAdmin.username}.`);
+      } else {
+        message.warning(`Tenant ${result.tenant.code} created, but activation email was not sent. Configure Resend before inviting tenant admins.`);
+      }
       setOpen(false);
       form.resetFields();
       await load();
@@ -92,9 +97,10 @@ export function PlatformTenantsPage() {
         <Form form={form} layout="vertical" onFinish={createTenant} requiredMark={false}>
           <Form.Item name="code" label="Tenant code" rules={[{ required: true }, { max: 64 }]}><Input /></Form.Item>
           <Form.Item name="name" label="Tenant name" rules={[{ required: true }, { max: 200 }]}><Input /></Form.Item>
-          <Form.Item name="adminUsername" label="Initial admin username" rules={[{ required: true }, { max: 200 }]}><Input autoComplete="off" /></Form.Item>
-          <Form.Item name="initialPassword" label="Temporary password" extra="Minimum 12 characters. Share it securely with the tenant administrator." rules={[{ required: true }, { min: 12 }, { max: 200 }]}>
-            <Input.Password autoComplete="new-password" />
+          <Form.Item name="adminEmail" label="Tenant admin email"
+            extra="An activation link will be emailed when Resend is configured."
+            rules={[{ required: true }, { type: "email" }, { max: 320 }]}>
+            <Input type="email" autoComplete="email" />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={submitting} block>Create tenant</Button>
         </Form>

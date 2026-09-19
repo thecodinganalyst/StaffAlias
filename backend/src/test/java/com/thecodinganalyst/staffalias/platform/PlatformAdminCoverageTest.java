@@ -14,6 +14,7 @@ import java.util.UUID;
 import com.thecodinganalyst.staffalias.security.ApplicationRole;
 import com.thecodinganalyst.staffalias.security.ApplicationUser;
 import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;
+import com.thecodinganalyst.staffalias.security.AccountActivationService;
 import com.thecodinganalyst.staffalias.tenant.Tenant;
 import com.thecodinganalyst.staffalias.tenant.TenantRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -72,8 +73,8 @@ class PlatformAdminCoverageTest {
     void platformTenantServiceCoversProvisioningConflictsAndMissingTenant() {
         TenantRepository tenants = Mockito.mock(TenantRepository.class);
         ApplicationUserRepository users = Mockito.mock(ApplicationUserRepository.class);
-        PasswordEncoder encoder = Mockito.mock(PasswordEncoder.class);
-        PlatformTenantAdminService service = new PlatformTenantAdminService(tenants, users, encoder);
+        AccountActivationService activation = Mockito.mock(AccountActivationService.class);
+        PlatformTenantAdminService service = new PlatformTenantAdminService(tenants, users, activation);
         Tenant existing = new Tenant("ACME", "Acme");
         UUID existingId = UUID.randomUUID();
         UUID missing = UUID.randomUUID();
@@ -87,25 +88,28 @@ class PlatformAdminCoverageTest {
         assertThatThrownBy(() -> service.getTenant(missing)).isInstanceOf(EntityNotFoundException.class);
 
         when(tenants.findByCode("ACME")).thenReturn(Optional.of(existing));
-        assertThatThrownBy(() -> service.provisionTenant("ACME", "Other", "admin-a", "initial-pass-1"))
+        assertThatThrownBy(() -> service.provisionTenant("ACME", "Other", "admin-a@example.com"))
                 .isInstanceOf(ResponseStatusException.class);
 
         when(tenants.findByCode("NEW")).thenReturn(Optional.empty());
         when(users.findByUsernameIgnoreCase("occupied")).thenReturn(Optional.of(
                 new ApplicationUser("occupied", "hash", ApplicationRole.TENANT_ADMIN, existing)));
-        assertThatThrownBy(() -> service.provisionTenant("NEW", "New", "occupied", "initial-pass-1"))
+        assertThatThrownBy(() -> service.provisionTenant("NEW", "New", "occupied"))
                 .isInstanceOf(ResponseStatusException.class);
 
-        when(users.findByUsernameIgnoreCase("new-admin")).thenReturn(Optional.empty());
+        when(users.findByUsernameIgnoreCase("new-admin@example.com")).thenReturn(Optional.empty());
         when(tenants.save(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(users.save(any(ApplicationUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(encoder.encode("initial-pass-1")).thenReturn("encoded");
+        when(activation.issue(any(ApplicationUser.class), org.mockito.ArgumentMatchers.eq("New Tenant"))).thenReturn(true);
 
         PlatformTenantAdminService.TenantProvisioningResult result =
-                service.provisionTenant("NEW", "New Tenant", "new-admin", "initial-pass-1");
+                service.provisionTenant("NEW", "New Tenant", "new-admin@example.com");
         assertThat(result.tenant().getCode()).isEqualTo("NEW");
         assertThat(result.tenantAdmin().getRole()).isEqualTo(ApplicationRole.TENANT_ADMIN);
         assertThat(result.tenantAdmin().getTenant()).isSameAs(result.tenant());
-        assertThat(result.tenantAdmin().getPasswordHash()).isEqualTo("encoded");
+        assertThat(result.tenantAdmin().getPasswordHash()).isNull();
+        assertThat(result.tenantAdmin().getEmail()).isEqualTo("new-admin@example.com");
+        assertThat(result.tenantAdmin().isEnabled()).isFalse();
+        assertThat(result.activationEmailSent()).isTrue();
     }
 }

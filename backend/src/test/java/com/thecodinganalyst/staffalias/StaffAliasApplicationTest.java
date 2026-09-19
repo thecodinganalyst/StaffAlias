@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.thecodinganalyst.staffalias.employment.EmploymentIdentifierRepository;
 import com.thecodinganalyst.staffalias.employment.EmploymentRepository;
 import com.thecodinganalyst.staffalias.people.PersonRepository;
+import com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository;
 import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;
 import com.thecodinganalyst.staffalias.tenant.TenantRepository;
 import com.thecodinganalyst.staffalias.tenant.TenantSettingRepository;
@@ -45,6 +46,9 @@ class StaffAliasApplicationTest {
 
     @MockitoBean
     private ApplicationUserRepository applicationUserRepository;
+
+    @MockitoBean
+    private AccountActivationTokenRepository accountActivationTokenRepository;
 
     @Test
     void contextLoads() {

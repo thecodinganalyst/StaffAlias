@@ -1,8 +1,10 @@
 package com.thecodinganalyst.staffalias.platform;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
+import com.thecodinganalyst.staffalias.security.AccountActivationService;
 import com.thecodinganalyst.staffalias.security.ApplicationRole;
 import com.thecodinganalyst.staffalias.security.ApplicationUser;
 import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;
@@ -12,7 +14,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,14 +26,14 @@ public class PlatformTenantAdminService {
 
     private final TenantRepository tenantRepository;
     private final ApplicationUserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AccountActivationService activationService;
 
     public PlatformTenantAdminService(TenantRepository tenantRepository,
             ApplicationUserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            AccountActivationService activationService) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.activationService = activationService;
     }
 
     @Transactional(readOnly = true)
@@ -46,27 +47,29 @@ public class PlatformTenantAdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
     }
 
-    public TenantProvisioningResult provisionTenant(String code, String name,
-            String adminUsername, String initialPassword) {
+    public TenantProvisioningResult provisionTenant(String code, String name, String adminEmail) {
+        String normalizedEmail = adminEmail.trim().toLowerCase(Locale.ROOT);
         if (tenantRepository.findByCode(code).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tenant code already exists");
         }
-        if (userRepository.findByUsernameIgnoreCase(adminUsername).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
+        if (userRepository.findByUsernameIgnoreCase(normalizedEmail).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tenant admin email already exists");
         }
 
         Tenant tenant = tenantRepository.save(new Tenant(code, name));
-        ApplicationUser tenantAdmin = userRepository.save(new ApplicationUser(
-                adminUsername,
-                passwordEncoder.encode(initialPassword),
-                ApplicationRole.TENANT_ADMIN,
-                tenant));
+        ApplicationUser tenantAdmin = new ApplicationUser(
+                normalizedEmail, null, ApplicationRole.TENANT_ADMIN, tenant);
+        tenantAdmin.setEmail(normalizedEmail);
+        tenantAdmin.disable();
+        tenantAdmin = userRepository.save(tenantAdmin);
 
-        log.info("Platform administration provisioned tenant id={} code={} adminUserId={}",
-                tenant.getId(), tenant.getCode(), tenantAdmin.getId());
-        return new TenantProvisioningResult(tenant, tenantAdmin);
+        boolean activationEmailSent = activationService.issue(tenantAdmin, tenant.getName());
+
+        log.info("Platform administration provisioned tenant id={} code={} adminUserId={} activationEmailSent={}",
+                tenant.getId(), tenant.getCode(), tenantAdmin.getId(), activationEmailSent);
+        return new TenantProvisioningResult(tenant, tenantAdmin, activationEmailSent);
     }
 
-    public record TenantProvisioningResult(Tenant tenant, ApplicationUser tenantAdmin) {
+    public record TenantProvisioningResult(Tenant tenant, ApplicationUser tenantAdmin, boolean activationEmailSent) {
     }
 }
