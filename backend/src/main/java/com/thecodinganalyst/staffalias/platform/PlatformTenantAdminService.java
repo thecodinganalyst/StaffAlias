@@ -25,14 +25,14 @@ public class PlatformTenantAdminService {
 
     private final TenantRepository tenantRepository;
     private final ApplicationUserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AccountActivationService activationService;
 
     public PlatformTenantAdminService(TenantRepository tenantRepository,
             ApplicationUserRepository userRepository,
             PasswordEncoder passwordEncoder) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.activationService = activationService;
     }
 
     @Transactional(readOnly = true)
@@ -64,9 +64,9 @@ public class PlatformTenantAdminService {
 
         log.info("Platform administration provisioned tenant id={} code={} adminUserId={}",
                 tenant.getId(), tenant.getCode(), tenantAdmin.getId());
-        return new TenantProvisioningResult(tenant, tenantAdmin);
+        return new TenantProvisioningResult(tenant, tenantAdmin, activationEmailSent);
     }
 
-    public record TenantProvisioningResult(Tenant tenant, ApplicationUser tenantAdmin) {
+    public record TenantProvisioningResult(Tenant tenant, ApplicationUser tenantAdmin, boolean activationEmailSent) {
     }
 }
