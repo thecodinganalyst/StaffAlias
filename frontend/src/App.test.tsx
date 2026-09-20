@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
@@ -32,6 +32,22 @@ describe("role-aware admin routes", () => {
     render(<App />);
     expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
     expect(screen.queryByText("Tenants")).not.toBeInTheDocument();
+  });
+
+  it("exposes platform tenant navigation on a compact viewport", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/auth/me")) {
+        return jsonResponse(200, { userId: "platform", username: "platform", role: "PLATFORM_ADMIN" });
+      }
+      return jsonResponse(404);
+    }));
+    window.history.pushState({}, "", "/");
+    render(<App />);
+
+    const navigationButton = await screen.findByRole("button", { name: /open navigation/i });
+    fireEvent.click(navigationButton);
+    expect(await screen.findByRole("link", { name: "Tenants" })).toHaveAttribute("href", "/platform/tenants");
   });
 
   it("shows tenant management to a platform admin", async () => {
