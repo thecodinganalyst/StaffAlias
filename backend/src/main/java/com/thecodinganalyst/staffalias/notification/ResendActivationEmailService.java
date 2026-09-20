@@ -24,8 +24,13 @@ public class ResendActivationEmailService implements ActivationEmailService {
     }
 
     @Override
+    public boolean isConfigured() {
+        return !apiKey.isBlank() && !from.isBlank();
+    }
+
+    @Override
     public boolean sendTenantAdminActivation(String email, String tenantName, String activationUrl) {
-        if (apiKey.isBlank() || from.isBlank()) {
+        if (!isConfigured()) {
             log.warn("Tenant admin activation email not sent because Resend is not configured; recipient={} tenant={}",
                     email, tenantName);
             return false;
