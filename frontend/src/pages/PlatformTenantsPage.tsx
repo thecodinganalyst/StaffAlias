@@ -65,7 +65,7 @@ export function PlatformTenantsPage() {
       form.resetFields();
       await load();
     } catch (error) {
-      message.error(error instanceof ApiError && error.status === 409 ? error.message : "Unable to create tenant.");
+      message.error(error instanceof ApiError ? `Unable to create tenant: ${error.message}` : "Unable to create tenant.");
     } finally {
       setSubmitting(false);
     }
