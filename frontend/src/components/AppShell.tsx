@@ -1,5 +1,6 @@
-import { HomeOutlined, HeartOutlined, LogoutOutlined, TeamOutlined } from "@ant-design/icons";
-import { Button, Grid, Layout, Menu, Space, Tag, Typography } from "antd";
+import { HomeOutlined, HeartOutlined, LogoutOutlined, MenuOutlined, TeamOutlined } from "@ant-design/icons";
+import { Button, Drawer, Grid, Layout, Menu, Space, Tag, Typography } from "antd";
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { env } from "../config/env";
@@ -12,6 +13,7 @@ export function AppShell() {
   const screens = Grid.useBreakpoint();
   const compact = !screens.md;
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const selectedKey = location.pathname.startsWith("/platform/tenants")
     ? "/platform/tenants"
@@ -49,7 +51,17 @@ export function AppShell() {
       )}
       <Layout>
         <Header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingInline: compact ? 16 : 24, borderBottom: "1px solid #f0f0f0" }}>
-          <Typography.Text strong>{compact ? env.appName : "Staff lifecycle management"}</Typography.Text>
+          <Space>
+            {compact && (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                aria-label="Open navigation"
+                onClick={() => setMobileMenuOpen(true)}
+              />
+            )}
+            <Typography.Text strong>{compact ? env.appName : "Staff lifecycle management"}</Typography.Text>
+          </Space>
           <Space>
             <Typography.Text>{user?.username}</Typography.Text>
             {user && <Tag>{user.role === "PLATFORM_ADMIN" ? "Platform admin" : "Tenant admin"}</Tag>}
@@ -58,6 +70,22 @@ export function AppShell() {
           </Space>
         </Header>
         <Content style={{ padding: compact ? 16 : 24 }}><Outlet /></Content>
+        {compact && (
+          <Drawer
+            title={env.appName}
+            placement="left"
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            styles={{ body: { padding: 0 } }}
+          >
+            <Menu
+              mode="inline"
+              selectedKeys={[selectedKey]}
+              items={items}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          </Drawer>
+        )}
       </Layout>
     </Layout>
   );
