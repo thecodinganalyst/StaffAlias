@@ -34,6 +34,20 @@ describe("role-aware admin routes", () => {
     expect(screen.queryByText("Tenants")).not.toBeInTheDocument();
   });
 
+  it("exposes platform tenant navigation on a compact viewport", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/auth/me")) {
+        return jsonResponse(200, { userId: "platform", username: "platform", role: "PLATFORM_ADMIN" });
+      }
+      return jsonResponse(404);
+    }));
+    window.history.pushState({}, "", "/");
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: /open navigation/i })).toBeInTheDocument();
+  });
+
   it("shows tenant management to a platform admin", async () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
