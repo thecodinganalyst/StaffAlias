@@ -34,6 +34,11 @@ public class AccountActivationService {
     }
 
     public boolean issue(ApplicationUser user, String tenantName) {
+        // Email delivery is optional. When no provider is configured there is no
+        // usable recipient path for a raw token, so do not let token persistence
+        // become a dependency of tenant provisioning.
+        if (!emailService.isConfigured()) return false;
+
         byte[] bytes = new byte[32]; random.nextBytes(bytes);
         String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         tokenRepository.save(new AccountActivationToken(user, hash(raw), Instant.now().plus(Duration.ofHours(24))));
