@@ -32,12 +32,28 @@ class AccountActivationCoverageTest {
                 "https://staffalias.example/");
 
         ApplicationUser user = pendingAdmin();
+        when(email.isConfigured()).thenReturn(true);
         when(email.sendTenantAdminActivation(eq("admin@example.com"), eq("Acme"), anyString())).thenReturn(true);
 
         assertThat(service.issue(user, "Acme")).isTrue();
         verify(tokens).save(any(AccountActivationToken.class));
         verify(email).sendTenantAdminActivation(eq("admin@example.com"), eq("Acme"),
                 org.mockito.ArgumentMatchers.contains("https://staffalias.example/activate?token="));
+    }
+
+    @Test
+    void issueSkipsTokenPersistenceWhenEmailIsNotConfigured() {
+        AccountActivationTokenRepository tokens = mock(AccountActivationTokenRepository.class);
+        ActivationEmailService email = mock(ActivationEmailService.class);
+        AccountActivationService service = new AccountActivationService(tokens,
+                mock(ApplicationUserRepository.class), mock(PasswordEncoder.class), email,
+                "https://staffalias.example/");
+
+        when(email.isConfigured()).thenReturn(false);
+
+        assertThat(service.issue(pendingAdmin(), "Acme")).isFalse();
+        verify(email).isConfigured();
+        org.mockito.Mockito.verifyNoInteractions(tokens);
     }
 
     @Test
