@@ -6,5 +6,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AccountActivationTokenRepository extends JpaRepository<AccountActivationToken, UUID> {
     Optional<AccountActivationToken> findByTokenHash(String tokenHash);
-    void deleteByUserTenantId(UUID tenantId);
 }
