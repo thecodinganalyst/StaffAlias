@@ -50,8 +50,8 @@ export function AppShell() {
         </Sider>
       )}
       <Layout>
-        <Header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingInline: compact ? 16 : 24, borderBottom: "1px solid #f0f0f0" }}>
-          <Space>
+        <Header className={compact ? "app-header app-header--compact" : "app-header"} style={{ paddingInline: compact ? 12 : 24 }}>
+          <Space className="app-header__brand" size={compact ? 4 : 8}>
             {compact && (
               <Button
                 type="text"
@@ -60,13 +60,13 @@ export function AppShell() {
                 onClick={() => setMobileMenuOpen(true)}
               />
             )}
-            <Typography.Text strong>{compact ? env.appName : "Staff lifecycle management"}</Typography.Text>
+            <Typography.Text className="app-header__title" strong>{compact ? env.appName : "Staff lifecycle management"}</Typography.Text>
           </Space>
-          <Space>
-            <Typography.Text>{user?.username}</Typography.Text>
-            {user && <Tag>{user.role === "PLATFORM_ADMIN" ? "Platform admin" : "Tenant admin"}</Tag>}
-            {user?.tenantId && <Tag>{user.tenantId}</Tag>}
-            <Button type="text" icon={<LogoutOutlined />} onClick={() => void signOut()}>Logout</Button>
+          <Space className="app-header__account" size={compact ? 4 : 8}>
+            {!compact && <Typography.Text>{user?.username}</Typography.Text>}
+            {user && !compact && <Tag>{user.role === "PLATFORM_ADMIN" ? "Platform admin" : "Tenant admin"}</Tag>}
+            {user?.tenantId && !compact && <Tag>{user.tenantId}</Tag>}
+            <Button aria-label="Logout" type="text" icon={<LogoutOutlined />} onClick={() => void signOut()}>{compact ? null : "Logout"}</Button>
           </Space>
         </Header>
         <Content style={{ padding: compact ? 16 : 24 }}><Outlet /></Content>

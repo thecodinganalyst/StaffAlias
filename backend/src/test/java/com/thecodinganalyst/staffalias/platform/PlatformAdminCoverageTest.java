@@ -111,5 +111,6 @@ class PlatformAdminCoverageTest {
         assertThat(result.tenantAdmin().getEmail()).isEqualTo("new-admin@example.com");
         assertThat(result.tenantAdmin().isEnabled()).isFalse();
         assertThat(result.activationEmailSent()).isTrue();
+
     }
 }

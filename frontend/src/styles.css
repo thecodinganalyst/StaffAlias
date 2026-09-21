@@ -14,3 +14,61 @@ body {
 * {
   box-sizing: border-box;
 }
+
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.app-header__brand,
+.app-header__account {
+  min-width: 0;
+}
+
+.app-header__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header--compact .ant-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.tenant-page__heading {
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  .app-header {
+    height: 56px;
+    line-height: normal;
+  }
+
+  .tenant-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .tenant-page__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tenant-page__heading > .ant-space-item {
+    width: 100%;
+  }
+
+  .tenant-modal {
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+  }
+
+  .tenant-modal .ant-modal-content {
+    padding: 16px;
+  }
+}
