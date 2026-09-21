@@ -14,8 +14,12 @@ test("platform admin can login, create and view a tenant", async ({ page }) => {
   const id = "11111111-1111-4111-8111-111111111111";
   const code = `E2E${Date.now()}`;
   let tenant: { id: string; code: string; name: string } | undefined;
+  let authenticated = false;
   await page.route("**/api/auth/**", async route => {
-    if (route.request().url().endsWith("/api/auth/logout")) return route.fulfill({ status: 204 });
+    const url = route.request().url();
+    if (url.endsWith("/api/auth/login")) { authenticated = true; return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ userId: "platform", username: "platform", role: "PLATFORM_ADMIN" }) }); }
+    if (url.endsWith("/api/auth/logout")) { authenticated = false; return route.fulfill({ status: 204 }); }
+    if (!authenticated) return route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ userId: "platform", username: "platform", role: "PLATFORM_ADMIN" }) });
   });
   await page.route("**/api/platform/tenants**", async route => {
