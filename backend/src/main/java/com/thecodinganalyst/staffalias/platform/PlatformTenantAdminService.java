@@ -47,6 +47,20 @@ public class PlatformTenantAdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
     }
 
+    public Tenant updateTenant(UUID id, String name) {
+        Tenant tenant = getTenant(id);
+        tenant.rename(name);
+        return tenantRepository.save(tenant);
+    }
+
+    public void deleteTenant(UUID id) {
+        Tenant tenant = getTenant(id);
+        userRepository.deleteAll(userRepository.findAll().stream()
+                .filter(user -> user.getTenant() != null && id.equals(user.getTenant().getId()))
+                .toList());
+        tenantRepository.delete(tenant);
+    }
+
     public TenantProvisioningResult provisionTenant(String code, String name, String adminEmail) {
         String normalizedEmail = adminEmail.trim().toLowerCase(Locale.ROOT);
         if (tenantRepository.findByCode(code).isPresent()) {
