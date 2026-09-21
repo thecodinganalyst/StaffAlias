@@ -115,8 +115,15 @@ class AccountActivationCoverageTest {
     @Test
     void resendIsOptionalWhenConfigurationIsMissing() {
         ResendActivationEmailService service = new ResendActivationEmailService(" ", null);
+        assertThat(service.isConfigured()).isFalse();
         assertThat(service.sendTenantAdminActivation("admin@example.com", "Acme",
                 "https://example.test/activate")).isFalse();
+    }
+
+    @Test
+    void resendReportsConfiguredWhenRequiredSettingsExist() {
+        ResendActivationEmailService service = new ResendActivationEmailService("test-key", "StaffAlias <noreply@example.test>");
+        assertThat(service.isConfigured()).isTrue();
     }
 
     private ApplicationUser pendingAdmin() {
