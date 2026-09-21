@@ -55,7 +55,9 @@ public class PlatformTenantAdminService {
 
     public void deleteTenant(UUID id) {
         Tenant tenant = getTenant(id);
-        userRepository.deleteAll(userRepository.findByTenantId(id));
+        userRepository.deleteAll(userRepository.findAll().stream()
+                .filter(user -> user.getTenant() != null && id.equals(user.getTenant().getId()))
+                .toList());
         tenantRepository.delete(tenant);
     }
 
