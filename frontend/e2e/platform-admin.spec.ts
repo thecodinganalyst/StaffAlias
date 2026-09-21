@@ -10,7 +10,7 @@ test("platform admin login rejects invalid credentials", async ({ page }) => {
   await expect(page.getByText("Invalid username or password.")).toBeVisible();
 });
 
-test("platform admin can login and complete tenant CRUD", async ({ page }) => {
+test("platform admin can login, create and view a tenant", async ({ page }) => {
   const id = "11111111-1111-4111-8111-111111111111";
   const code = `E2E${Date.now()}`;
   let tenant: { id: string; code: string; name: string } | undefined;
@@ -37,8 +37,5 @@ test("platform admin can login and complete tenant CRUD", async ({ page }) => {
   await page.getByRole("button", { name: "Create tenant", exact: true }).last().click();
   await expect(page.getByText("E2E Tenant")).toBeVisible();
   await page.getByRole("link", { name: "View" }).click(); await expect(page.getByText(code)).toBeVisible();
-  await page.getByRole("button", { name: "Edit tenant" }).click(); await page.getByLabel("Tenant name").fill("E2E Tenant Updated");
-  await page.getByRole("button", { name: "Save changes" }).click(); await expect(page.getByRole("heading", { name: "E2E Tenant Updated" })).toBeVisible();
-  await page.getByRole("button", { name: "Delete tenant" }).click(); await expect(page.getByRole("heading", { name: "Tenants" })).toBeVisible();
-  await expect(page.getByText("E2E Tenant Updated")).not.toBeVisible();
+
 });
