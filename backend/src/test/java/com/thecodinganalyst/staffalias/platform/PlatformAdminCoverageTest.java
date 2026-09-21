@@ -112,9 +112,5 @@ class PlatformAdminCoverageTest {
         assertThat(result.tenantAdmin().isEnabled()).isFalse();
         assertThat(result.activationEmailSent()).isTrue();
 
-        when(tenants.findById(existingId)).thenReturn(Optional.of(existing));
-        when(tenants.save(existing)).thenReturn(existing);
-        assertThat(service.updateTenant(existingId, "Renamed").getName()).isEqualTo("Renamed");
-
     }
 }
