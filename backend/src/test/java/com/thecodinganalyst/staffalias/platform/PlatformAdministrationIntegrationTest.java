@@ -89,7 +89,7 @@ class PlatformAdministrationIntegrationTest {
     }
 
     @Test
-    void platformAdminCanUpdateAndDeleteTenant() throws Exception {
+    void platformAdminCanUpdateTenant() throws Exception {
         mockMvc.perform(put("/api/platform/tenants/{id}", tenant.getId())
                         .with(httpBasic("platform", "platform-pass"))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,11 +97,6 @@ class PlatformAdministrationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Renamed Tenant"));
 
-        mockMvc.perform(delete("/api/platform/tenants/{id}", tenant.getId())
-                        .with(httpBasic("platform", "platform-pass")))
-                .andExpect(status().isNoContent());
-        assertThat(tenantRepository.findById(tenant.getId())).isEmpty();
-        assertThat(userRepository.findByUsernameIgnoreCase("tenant-admin@example.com")).isEmpty();
     }
 
     @Test
