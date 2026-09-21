@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 import com.thecodinganalyst.staffalias.security.AccountActivationService;
+import com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository;
 import com.thecodinganalyst.staffalias.security.ApplicationRole;
 import com.thecodinganalyst.staffalias.security.ApplicationUser;
 import com.thecodinganalyst.staffalias.security.ApplicationUserRepository;
@@ -27,12 +28,12 @@ public class PlatformTenantAdminService {
     private final TenantRepository tenantRepository;
     private final ApplicationUserRepository userRepository;
     private final AccountActivationService activationService;
-    private final com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository activationTokenRepository;
+    private final AccountActivationTokenRepository activationTokenRepository;
 
     public PlatformTenantAdminService(TenantRepository tenantRepository,
             ApplicationUserRepository userRepository,
             AccountActivationService activationService,
-            com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository activationTokenRepository) {
+            AccountActivationTokenRepository activationTokenRepository) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.activationService = activationService;
