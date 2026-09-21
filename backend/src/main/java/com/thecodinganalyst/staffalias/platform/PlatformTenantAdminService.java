@@ -27,13 +27,16 @@ public class PlatformTenantAdminService {
     private final TenantRepository tenantRepository;
     private final ApplicationUserRepository userRepository;
     private final AccountActivationService activationService;
+    private final com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository activationTokenRepository;
 
     public PlatformTenantAdminService(TenantRepository tenantRepository,
             ApplicationUserRepository userRepository,
-            AccountActivationService activationService) {
+            AccountActivationService activationService,
+            com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository activationTokenRepository) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.activationService = activationService;
+        this.activationTokenRepository = activationTokenRepository;
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +58,7 @@ public class PlatformTenantAdminService {
 
     public void deleteTenant(UUID id) {
         Tenant tenant = getTenant(id);
+        activationTokenRepository.deleteByUserTenantId(id);
         userRepository.deleteAll(userRepository.findByTenantId(id));
         tenantRepository.delete(tenant);
     }
