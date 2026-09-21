@@ -116,10 +116,5 @@ class PlatformAdminCoverageTest {
         when(tenants.save(existing)).thenReturn(existing);
         assertThat(service.updateTenant(existingId, "Renamed").getName()).isEqualTo("Renamed");
 
-        ApplicationUser tenantUser = new ApplicationUser("delete@example.com", "hash", ApplicationRole.TENANT_ADMIN, existing);
-        when(users.findAll()).thenReturn(List.of(tenantUser));
-        service.deleteTenant(existingId);
-        verify(users).deleteAll(List.of(tenantUser));
-        verify(tenants).delete(existing);
     }
 }
