@@ -74,7 +74,8 @@ class PlatformAdminCoverageTest {
         TenantRepository tenants = Mockito.mock(TenantRepository.class);
         ApplicationUserRepository users = Mockito.mock(ApplicationUserRepository.class);
         AccountActivationService activation = Mockito.mock(AccountActivationService.class);
-        PlatformTenantAdminService service = new PlatformTenantAdminService(tenants, users, activation);
+        com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository tokens = Mockito.mock(com.thecodinganalyst.staffalias.security.AccountActivationTokenRepository.class);
+        PlatformTenantAdminService service = new PlatformTenantAdminService(tenants, users, activation, tokens);
         Tenant existing = new Tenant("ACME", "Acme");
         UUID existingId = UUID.randomUUID();
         UUID missing = UUID.randomUUID();
@@ -119,6 +120,7 @@ class PlatformAdminCoverageTest {
         ApplicationUser tenantUser = new ApplicationUser("delete@example.com", "hash", ApplicationRole.TENANT_ADMIN, existing);
         when(users.findByTenantId(existingId)).thenReturn(List.of(tenantUser));
         service.deleteTenant(existingId);
+        verify(tokens).deleteByUserTenantId(existingId);
         verify(users).deleteAll(List.of(tenantUser));
         verify(tenants).delete(existing);
     }
