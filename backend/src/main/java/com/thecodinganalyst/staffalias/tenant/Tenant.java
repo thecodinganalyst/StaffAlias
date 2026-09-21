@@ -38,5 +38,4 @@ public class Tenant {
     public UUID getId() { return id; }
     public String getCode() { return code; }
     public String getName() { return name; }
-    public void rename(String name) { this.name = name; }
 }
