@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,11 +38,6 @@ public class PlatformTenantAdminController {
         return TenantResponse.from(service.getTenant(id));
     }
 
-    @PutMapping("/{id}")
-    public TenantResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateTenantRequest request) {
-        return TenantResponse.from(service.updateTenant(id, request.name().trim()));
-    }
-
     @PostMapping
     public ResponseEntity<TenantProvisioningResponse> create(@Valid @RequestBody CreateTenantRequest request) {
         TenantProvisioningResult result = service.provisionTenant(
@@ -54,8 +48,6 @@ public class PlatformTenantAdminController {
         return ResponseEntity.created(URI.create("/api/platform/tenants/" + tenant.getId()))
                 .body(TenantProvisioningResponse.from(result));
     }
-
-    public record UpdateTenantRequest(@NotBlank @Size(max = 200) String name) { }
 
     public record CreateTenantRequest(
             @NotBlank @Size(max = 64) String code,
