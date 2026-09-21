@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, Modal, Space, Table, Typography, message } from "antd";
+import { Button, Card, Form, Grid, Input, List, Modal, Space, Table, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, apiFetch } from "../api/http";
@@ -21,6 +21,8 @@ export function PlatformTenantsPage() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
+  const screens = Grid.useBreakpoint();
+  const compact = !screens.md;
 
   async function load() {
     setLoading(true);
@@ -72,28 +74,41 @@ export function PlatformTenantsPage() {
   }
 
   return (
-    <Card>
+    <Card className="tenant-card">
       <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        <Space style={{ width: "100%", justifyContent: "space-between" }}>
+        <Space className="tenant-page__heading" style={{ width: "100%", justifyContent: "space-between" }}>
           <div>
             <Typography.Title level={2} style={{ marginBottom: 0 }}>Tenants</Typography.Title>
             <Typography.Text type="secondary">Platform-wide tenant administration</Typography.Text>
           </div>
-          <Button type="primary" onClick={() => setOpen(true)}>Create tenant</Button>
+          <Button type="primary" onClick={() => setOpen(true)} block={compact}>Create tenant</Button>
         </Space>
-        <Table
-          rowKey="id"
-          loading={loading}
-          dataSource={tenants}
-          pagination={false}
-          columns={[
-            { title: "Code", dataIndex: "code" },
-            { title: "Name", dataIndex: "name" },
-            { title: "", key: "actions", render: (_, tenant: Tenant) => <Link to={`/platform/tenants/${tenant.id}`}>View</Link> },
-          ]}
-        />
+        {compact ? (
+          <List
+            loading={loading}
+            dataSource={tenants}
+            locale={{ emptyText: "No tenants" }}
+            renderItem={(tenant) => (
+              <List.Item actions={[<Link key="view" to={`/platform/tenants/${tenant.id}`}>View</Link>]}>
+                <List.Item.Meta title={tenant.name} description={tenant.code} />
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Table
+            rowKey="id"
+            loading={loading}
+            dataSource={tenants}
+            pagination={false}
+            columns={[
+              { title: "Code", dataIndex: "code" },
+              { title: "Name", dataIndex: "name" },
+              { title: "", key: "actions", render: (_, tenant: Tenant) => <Link to={`/platform/tenants/${tenant.id}`}>View</Link> },
+            ]}
+          />
+        )}
       </Space>
-      <Modal title="Create tenant and initial admin" open={open} onCancel={() => setOpen(false)} footer={null} destroyOnHidden>
+      <Modal className="tenant-modal" title="Create tenant and initial admin" open={open} onCancel={() => setOpen(false)} footer={null} destroyOnHidden>
         <Form form={form} layout="vertical" onFinish={createTenant} requiredMark={false}>
           <Form.Item name="code" label="Tenant code" rules={[{ required: true }, { max: 64 }]}><Input /></Form.Item>
           <Form.Item name="name" label="Tenant name" rules={[{ required: true }, { max: 200 }]}><Input /></Form.Item>
