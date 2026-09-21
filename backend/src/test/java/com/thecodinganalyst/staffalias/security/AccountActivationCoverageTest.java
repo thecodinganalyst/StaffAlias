@@ -124,6 +124,8 @@ class AccountActivationCoverageTest {
     void resendReportsConfiguredWhenRequiredSettingsExist() {
         ResendActivationEmailService service = new ResendActivationEmailService("test-key", "StaffAlias <noreply@example.test>");
         assertThat(service.isConfigured()).isTrue();
+        assertThat(service.sendTenantAdminActivation("admin@example.com", "<Acme & Co>",
+                "bad url with \"quotes\" & <tag>")).isFalse();
     }
 
     private ApplicationUser pendingAdmin() {
