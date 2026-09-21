@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -84,6 +86,22 @@ class PlatformAdministrationIntegrationTest {
         assertThat(createdAdmin.getTenant().getId()).isEqualTo(createdTenant.getId());
         assertThat(createdAdmin.getPasswordHash()).isNull();
         assertThat(createdAdmin.isEnabled()).isFalse();
+    }
+
+    @Test
+    void platformAdminCanUpdateAndDeleteTenant() throws Exception {
+        mockMvc.perform(put("/api/platform/tenants/{id}", tenant.getId())
+                        .with(httpBasic("platform", "platform-pass"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""{"name":"Renamed Tenant"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Renamed Tenant"));
+
+        mockMvc.perform(delete("/api/platform/tenants/{id}", tenant.getId())
+                        .with(httpBasic("platform", "platform-pass")))
+                .andExpect(status().isNoContent());
+        assertThat(tenantRepository.findById(tenant.getId())).isEmpty();
+        assertThat(userRepository.findByUsernameIgnoreCase("tenant-admin@example.com")).isEmpty();
     }
 
     @Test
