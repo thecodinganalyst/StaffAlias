@@ -7,5 +7,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ApplicationUserRepository extends JpaRepository<ApplicationUser, UUID> {
     Optional<ApplicationUser> findByUsernameIgnoreCase(String username);
-    java.util.List<ApplicationUser> findByTenantId(UUID tenantId);
 }
