@@ -40,6 +40,6 @@ test("platform admin can login, create and view a tenant", async ({ page }) => {
   await page.getByLabel("Tenant admin email").fill(`${code.toLowerCase()}@example.test`);
   await page.getByRole("button", { name: "Create tenant", exact: true }).last().click();
   await expect(page.getByText("E2E Tenant")).toBeVisible();
-  await page.getByRole("link", { name: "View" }).click(); await expect(page.getByText(code)).toBeVisible();
+  await page.getByRole("link", { name: "View" }).click(); await expect(page.getByRole("cell", { name: code })).toBeVisible();
 
 });
