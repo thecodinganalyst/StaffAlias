@@ -126,7 +126,24 @@ jobs:
           echo "Firebase Hosting did not become reachable."
           exit 1
 
-      - name: Verify same-origin API proxy\n        env:\n          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}\n        run: |\n          FRONTEND_URL=\"https://${FIREBASE_HOSTING_SITE}.web.app\"\n          for attempt in {1..12}; do\n            if curl --fail --silent --show-error --max-time 20 \"${FRONTEND_URL}/actuator/health\" > /dev/null; then\n              echo \"Same-origin backend proxy is reachable at ${FRONTEND_URL}/api\"\n              exit 0\n            fi\n            # Firebase rewrite only proxies /api/**; use an authenticated endpoint and accept 401 as proof it reached Spring.\n            STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 \"${FRONTEND_URL}/api/auth/me\" || true)\n            if [ \"${STATUS}\" = \"401\" ] || [ \"${STATUS}\" = \"200\" ]; then\n              echo \"Same-origin API proxy is reachable (HTTP ${STATUS}).\"\n              exit 0\n            fi\n            echo \"Same-origin API check attempt ${attempt}/12 returned ${STATUS}; retrying...\"\n            sleep 10\n          done\n          echo \"Same-origin API proxy did not become reachable.\"\n          exit 1\n\n      - name: Deployment summary
+      - name: Verify same-origin API proxy
+        env:
+          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
+        run: |
+          FRONTEND_URL="https://${FIREBASE_HOSTING_SITE}.web.app"
+          for attempt in {1..12}; do
+            STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "${FRONTEND_URL}/api/auth/me" || true)
+            if [ "${STATUS}" = "401" ] || [ "${STATUS}" = "200" ]; then
+              echo "Same-origin API proxy is reachable (HTTP ${STATUS})."
+              exit 0
+            fi
+            echo "Same-origin API check attempt ${attempt}/12 returned ${STATUS}; retrying..."
+            sleep 10
+          done
+          echo "Same-origin API proxy did not become reachable."
+          exit 1
+
+      - name: Deployment summary
         env:
           FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
         run: |
