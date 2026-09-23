@@ -73,11 +73,11 @@ Before deploying a migration that is difficult to reverse, take an appropriate S
 3. Approve the `production` environment deployment when prompted.
 4. The release workflow calls the existing CI workflow. Backend and frontend CI must pass before deployment starts.
 5. The backend workflow builds an immutable image tagged with the Git commit SHA, pushes it to Artifact Registry, and deploys it to Cloud Run.
-6. The frontend workflow resolves the deployed backend URL, builds the frontend with that API URL, and deploys it to Firebase Hosting with the Git SHA in the deployment message.
-7. The final verification job checks backend health, a read-only database-backed API operation, frontend availability, and the browser CORS path from the production frontend to the backend.
+6. The frontend workflow builds the frontend with the same-origin API base and deploys it to Firebase Hosting with the Git SHA in the deployment message.
+7. The final verification job checks direct Cloud Run health, Firebase availability, the read-only database-backed API through Firebase's same-origin `/api/**` proxy, and a real Platform Admin session login followed by `/api/auth/me`.
 8. Treat a failed verification job as a failed release. Investigate or roll back before considering the release complete.
 
-Production verification never creates or changes business data. `/api/system/database-readiness` performs only `SELECT 1` and returns `{"status":"UP"}` when the application can query the production database.
+Production verification never creates or changes business data. `/api/system/database-readiness` performs only `SELECT 1` and returns `{"status":"UP"}` when the application can query the production database. The authentication smoke test uses the existing Platform Admin credential from Secret Manager, keeps the session cookie in a temporary cookie jar, calls only `/api/auth/me`, and never prints the password.
 
 ## Identifying the deployed version
 
@@ -145,12 +145,16 @@ Never use `flyway clean` against production.
 
 ## Release verification details
 
-The final job fails visibly when any of these checks fail:
+The final job verifies the same path used by production browsers:
 
-- `GET /actuator/health` returns HTTP success and `status=UP`.
-- `GET /api/system/database-readiness` successfully executes a read-only database query and returns `status=UP`.
-- The Firebase Hosting production URL returns HTTP success.
-- A CORS preflight from the production Firebase origin to the database-readiness API is accepted, validating the frontend-to-backend browser connectivity policy.
+- Direct `GET /actuator/health` confirms the Cloud Run service is serving a healthy revision.
+- The Firebase Hosting production URL must return HTTP success.
+- `GET https://<site>.web.app/api/system/database-readiness` must pass through the Hosting rewrite, execute `SELECT 1`, and return `status=UP`.
+- A same-origin `POST /api/auth/login` followed by `GET /api/auth/me` with the returned session cookie must identify the configured account as `PLATFORM_ADMIN`.
+
+Verification retries bounded transient failures such as network errors, timeouts, and server-side 5xx responses. Authentication/authorization and other 4xx responses fail immediately because waiting cannot correct a deterministic client or security configuration error. Database-readiness failures print the safe response and recent Cloud Run logs to make release failures actionable.
+
+The previous direct frontend-to-Cloud-Run CORS verification is intentionally removed. Production browser traffic now uses the Firebase Hosting `/api/**` same-origin proxy.
 
 ## Basic troubleshooting
 
@@ -172,7 +176,7 @@ Confirm the three database secrets point to the production Supabase database, th
 
 ### Frontend works but API calls fail in the browser
 
-Check that the frontend was built against the current Cloud Run URL and that `CORS_ALLOWED_ORIGINS` contains both the configured `.web.app` and `.firebaseapp.com` production origins. Re-run the release workflow after correcting configuration so frontend and backend remain traceable to the same source release.
+Confirm browser requests target the Firebase Hosting origin under `/api/**`, not the direct `run.app` URL. Check the Firebase rewrite order and re-run the release workflow after correcting configuration.
 
 ### Firebase deployment fails
 
