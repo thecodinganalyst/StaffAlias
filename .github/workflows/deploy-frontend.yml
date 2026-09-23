@@ -37,21 +37,6 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Resolve production backend URL
-        id: backend
-        env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          REGION: ${{ vars.GCP_REGION }}
-          SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
-        run: |
-          API_URL="$(gcloud run services describe "${SERVICE}" \
-            --project "${PROJECT_ID}" \
-            --region "${REGION}" \
-            --format='value(status.url)')"
-          test -n "${API_URL}"
-          echo "url=${API_URL}" >> "$GITHUB_OUTPUT"
-          echo "Production API: ${API_URL}"
-
       - name: Restore npm download cache
         uses: actions/cache@v6
         with:
@@ -67,28 +52,28 @@ jobs:
       - name: Lint frontend
         working-directory: frontend
         env:
-          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_API_URL: /
           VITE_APP_NAME: StaffAlias
         run: npm run lint
 
       - name: Type check frontend
         working-directory: frontend
         env:
-          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_API_URL: /
           VITE_APP_NAME: StaffAlias
         run: npm run typecheck
 
       - name: Test frontend
         working-directory: frontend
         env:
-          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_API_URL: /
           VITE_APP_NAME: StaffAlias
         run: npm run test
 
       - name: Build production frontend
         working-directory: frontend
         env:
-          VITE_API_URL: ${{ steps.backend.outputs.url }}
+          VITE_API_URL: /
           VITE_APP_NAME: StaffAlias
         run: npm run build
 
@@ -141,59 +126,13 @@ jobs:
           echo "Firebase Hosting did not become reachable."
           exit 1
 
-      - name: Wait for backend readiness
-        env:
-          API_URL: ${{ steps.backend.outputs.url }}
-        run: |
-          for attempt in {1..12}; do
-            if curl --fail --silent --show-error --max-time 20 \
-              "${API_URL}/actuator/health" > /dev/null; then
-              echo "Backend is reachable at ${API_URL}"
-              exit 0
-            fi
-            echo "Backend readiness attempt ${attempt}/12 failed; retrying..."
-            sleep 10
-          done
-          echo "Backend did not become reachable within the readiness window."
-          exit 1
-
-      - name: Verify backend CORS for Firebase origin
-        env:
-          API_URL: ${{ steps.backend.outputs.url }}
-          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
-        run: |
-          ORIGIN="https://${FIREBASE_HOSTING_SITE}.web.app"
-          for attempt in {1..6}; do
-            HEADERS="$(mktemp)"
-            if curl --fail --silent --show-error --max-time 20 \
-              -X OPTIONS "${API_URL}/actuator/health" \
-              -H "Origin: ${ORIGIN}" \
-              -H "Access-Control-Request-Method: GET" \
-              -D "${HEADERS}" \
-              -o /dev/null; then
-              if grep -qi "^access-control-allow-origin: ${ORIGIN}" "${HEADERS}"; then
-                echo "Backend CORS allows ${ORIGIN}"
-                rm -f "${HEADERS}"
-                exit 0
-              fi
-              echo "CORS response did not allow ${ORIGIN}."
-              cat "${HEADERS}"
-            else
-              echo "CORS preflight attempt ${attempt}/6 failed to reach backend."
-            fi
-            rm -f "${HEADERS}"
-            sleep 10
-          done
-          echo "Backend CORS verification failed for ${ORIGIN}."
-          exit 1
-
-      - name: Deployment summary
+      - name: Verify same-origin API proxy\n        env:\n          FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}\n        run: |\n          FRONTEND_URL=\"https://${FIREBASE_HOSTING_SITE}.web.app\"\n          for attempt in {1..12}; do\n            if curl --fail --silent --show-error --max-time 20 \"${FRONTEND_URL}/actuator/health\" > /dev/null; then\n              echo \"Same-origin backend proxy is reachable at ${FRONTEND_URL}/api\"\n              exit 0\n            fi\n            # Firebase rewrite only proxies /api/**; use an authenticated endpoint and accept 401 as proof it reached Spring.\n            STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 \"${FRONTEND_URL}/api/auth/me\" || true)\n            if [ \"${STATUS}\" = \"401\" ] || [ \"${STATUS}\" = \"200\" ]; then\n              echo \"Same-origin API proxy is reachable (HTTP ${STATUS}).\"\n              exit 0\n            fi\n            echo \"Same-origin API check attempt ${attempt}/12 returned ${STATUS}; retrying...\"\n            sleep 10\n          done\n          echo \"Same-origin API proxy did not become reachable.\"\n          exit 1\n\n      - name: Deployment summary
         env:
           FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
         run: |
           {
             echo "### StaffAlias frontend deployment"
             echo "- Hosting URL: https://${FIREBASE_HOSTING_SITE}.web.app"
-            echo "- Backend API: ${{ steps.backend.outputs.url }}"
+            echo "- Browser API: same-origin /api proxy to Cloud Run"
             echo "- Source commit: \`${{ github.sha }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
