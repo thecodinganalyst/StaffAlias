@@ -1,6 +1,6 @@
 # Production frontend deployment
 
-StaffAlias uses Firebase Hosting for the production React/Vite frontend and Google Cloud Run for the backend API.
+StaffAlias uses Firebase Hosting for the production React/Vite frontend and Google Cloud Run for the backend API. Firebase Hosting proxies `/api/**` to Cloud Run so browser authentication remains same-origin.
 
 ## One-time Firebase setup
 
@@ -48,9 +48,11 @@ No additional GitHub secret is required.
 
 ## Production API URL
 
-Do not create or hard-code a production `VITE_API_URL` value.
+Production browser requests use a relative API base (`/`). Firebase Hosting rewrites `/api/**` to the `staffalias-api` Cloud Run service in `asia-southeast1`. This keeps the session cookie first-party and avoids cross-site/third-party cookie restrictions, including Safari tracking prevention.
 
-The deployment workflow resolves the current Cloud Run service URL with `gcloud run services describe` and supplies that URL as `VITE_API_URL` when Vite builds the frontend. Local development continues to use `frontend/.env.local` and the localhost API URL.
+Do not configure a direct Cloud Run `VITE_API_URL` for production. Local development continues to use `frontend/.env.local` with `VITE_API_URL=http://localhost:8080`.
+
+The `/api/**` rewrite must remain before the SPA `** -> /index.html` rewrite.
 
 ## CORS
 
@@ -93,7 +95,7 @@ The frontend workflow:
 
 ## SPA routing and caching
 
-`firebase.json` rewrites unknown routes to `/index.html`, so React routes continue to work when a URL is refreshed or opened directly.
+`firebase.json` first rewrites `/api/**` to Cloud Run, then rewrites other unknown routes to `/index.html`, so API traffic is never intercepted by the React SPA fallback.
 
 Vite-generated `/assets/**` files receive long-lived immutable caching. HTML is configured with `no-cache` so users receive the current application shell after a deployment.
 
