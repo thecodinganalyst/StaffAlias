@@ -74,6 +74,23 @@ jobs:
           echo "frontend_url=${FRONTEND_URL}" >> "$GITHUB_OUTPUT"
           echo "revision=${REVISION}" >> "$GITHUB_OUTPUT"
 
+      - name: Verify Cloud Run public invocation policy
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+          SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
+        run: |
+          if ! gcloud run services get-iam-policy "${SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --flatten='bindings[].members' \
+            --filter='bindings.role=roles/run.invoker AND bindings.members=allUsers' \
+            --format='value(bindings.members)' | grep -qx 'allUsers'; then
+            echo "::error::Cloud Run is not publicly invokable. Firebase Hosting /api/** rewrites require allUsers to have roles/run.invoker; application authorization remains enforced by Spring Security."
+            exit 1
+          fi
+          echo "Cloud Run public invocation policy verified."
+
       - name: Verify backend health
         env:
           URL: ${{ steps.release.outputs.backend_url }}/actuator/health
