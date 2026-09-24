@@ -61,6 +61,13 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void databaseReadinessIsPubliclyAccessible() throws Exception {
+        mockMvc.perform(get("/api/system/database-readiness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
     void anonymousUserIsRejected() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());
