@@ -131,16 +131,25 @@ jobs:
           FIREBASE_HOSTING_SITE: ${{ vars.FIREBASE_HOSTING_SITE }}
         run: |
           FRONTEND_URL="https://${FIREBASE_HOSTING_SITE}.web.app"
+          URL="${FRONTEND_URL}/api/system/database-readiness"
           for attempt in {1..12}; do
-            STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "${FRONTEND_URL}/api/auth/me" || true)
-            if [ "${STATUS}" = "401" ] || [ "${STATUS}" = "200" ]; then
-              echo "Same-origin API proxy is reachable (HTTP ${STATUS})."
+            STATUS="$(curl --silent --show-error --dump-header headers.txt --output response.json --write-out '%{http_code}' --max-time 20 "${URL}" || true)"
+            if [ "${STATUS}" = "200" ] && grep -q '"status":"UP"' response.json; then
+              echo "Same-origin API proxy reached StaffAlias database readiness."
               exit 0
             fi
-            echo "Same-origin API check attempt ${attempt}/12 returned ${STATUS}; retrying..."
+            echo "Same-origin API attempt ${attempt}/12 returned HTTP ${STATUS}."
+            echo "--- response headers ---"
+            cat headers.txt || true
+            echo "--- response body ---"
+            cat response.json || true
+            if [[ "${STATUS}" =~ ^4[0-9][0-9]$ ]]; then
+              echo "::error::Firebase same-origin API proxy returned non-retryable HTTP ${STATUS}."
+              exit 1
+            fi
             sleep 10
           done
-          echo "Same-origin API proxy did not become reachable."
+          echo "::error::Same-origin API proxy did not reach database readiness."
           exit 1
 
       - name: Deployment summary
