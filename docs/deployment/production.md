@@ -12,7 +12,7 @@ Before the first release, complete the infrastructure and platform setup describ
 - `docs/deployment/backend-cloud-run.md`
 - `docs/deployment/frontend.md`
 
-The production infrastructure must provide a Cloud Run service, Artifact Registry repository, Firebase Hosting site, GitHub-to-GCP Workload Identity Federation, and a reachable Supabase PostgreSQL database.
+The production infrastructure must provide a Cloud Run service, Artifact Registry repository, Firebase Hosting site, GitHub-to-GCP Workload Identity Federation, and a reachable Supabase PostgreSQL database. Cloud Run must grant `allUsers` `roles/run.invoker` so Firebase Hosting can invoke the `/api/**` rewrite; StaffAlias/Spring Security still authenticates and authorizes protected application routes.
 
 ## First-time infrastructure provisioning
 
@@ -147,6 +147,7 @@ Never use `flyway clean` against production.
 
 The final job verifies the same path used by production browsers:
 
+- The Cloud Run IAM policy must contain `allUsers -> roles/run.invoker`; the workflow fails explicitly if this Terraform-managed policy has drifted.
 - Direct `GET /actuator/health` confirms the Cloud Run service is serving a healthy revision.
 - The Firebase Hosting production URL must return HTTP success.
 - `GET https://<site>.web.app/api/system/database-readiness` must pass through the Hosting rewrite, execute `SELECT 1`, and return `status=UP`.
@@ -165,6 +166,12 @@ Fix the failing backend or frontend CI check first. The release workflow intenti
 ### GitHub OIDC authentication fails
 
 Verify the production environment variables, Workload Identity Provider attribute conditions, service-account IAM bindings, and repository/ref restrictions. Run `.github/workflows/gcp-oidc-smoke.yml` to isolate authentication from deployment.
+
+### Firebase API rewrite returns 401
+
+Check the Cloud Run IAM policy first. Terraform manages `allUsers` with `roles/run.invoker` when `allow_unauthenticated=true`. This permission only lets requests reach the application; Spring Security continues to protect authenticated StaffAlias endpoints. Run Terraform apply if the IAM binding has drifted.
+
+The deployment service account has `roles/logging.viewer` so release diagnostics can read recent Cloud Run logs. If diagnostics report `PERMISSION_DENIED`, apply the current Terraform IAM configuration.
 
 ### Cloud Run starts but health verification fails
 
